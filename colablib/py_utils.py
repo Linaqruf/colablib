@@ -3,6 +3,7 @@ import re
 import requests
 import subprocess
 import sys
+import time 
 from urllib.parse import urlparse, unquote
 from .cprint import cprint
 
@@ -19,6 +20,32 @@ def is_google_colab():
     except ImportError:
         return False
 
+def calculate_elapsed_time(start_time):
+    """
+    Calculate the elapsed time between a given start time and the current time.
+
+    Args:
+        start_time (float): The start time in seconds since the epoch.
+
+    Returns:
+        str: A formatted string representing the elapsed time.
+
+    Example:
+        >>> calculate_elapsed_time(time.time() - 30)
+        '30 sec'
+        >>> calculate_elapsed_time(time.time() - 120)
+        '2 mins 0 sec'
+    """
+    end_time = time.time()
+    elapsed_time = int(end_time - start_time)
+
+    if elapsed_time < 60:
+        return f"{elapsed_time} sec"
+    else:
+        mins, secs = divmod(elapsed_time, 60)
+        return f"{mins} mins {secs} sec"
+
+    
 def get_filename(url):
     """
     Extracts the filename from the given URL.
