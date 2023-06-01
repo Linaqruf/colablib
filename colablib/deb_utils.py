@@ -21,7 +21,7 @@ def ubuntu_deps(url, dst, desc=None):
     response.raise_for_status()
 
     with open(filename, "wb") as file:
-        for chunk in tqdm(response.iter_content(chunk_size=8192), desc="Downloading"):
+        for chunk in response.iter_content(chunk_size=8192):
             if chunk:
                 file.write(chunk)
 
@@ -29,14 +29,11 @@ def ubuntu_deps(url, dst, desc=None):
         deps.extractall(dst)
 
     if desc is None:
-        desc = "installing"
+        desc = cprint("Installing", color="green", tqdm_desc=True)
+
     for file in tqdm(os.listdir(dst), desc=desc):
         if file.endswith(".deb"):
-            try:
-                subprocess.run(["dpkg", "-i", os.path.join(dst, file)], stdout=subprocess.DEVNULL, check=True)
-            except subprocess.CalledProcessError as e:
-                cprint(f"Error installing {file}: {e}", color="red")
-                raise
+            subprocess.run(["dpkg", "-i", os.path.join(dst, file)], stdout=subprocess.DEVNULL, check=True)
 
     os.remove(filename)
     shutil.rmtree(dst)
