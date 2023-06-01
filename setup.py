@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='colablib',
-    version='0.1.5-dev3',
+    version='0.1.5-dev6',
     packages=find_packages(),
     author='Furqanil Taqwa',
     author_email='furqanil.taqwa@gmail.com',
