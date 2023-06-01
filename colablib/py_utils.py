@@ -1,34 +1,79 @@
+import os
+import re
+import requests
 import subprocess
 import sys
+from urllib.parse import urlparse, unquote
 from .cprint import cprint
 
 def is_google_colab():
+    """
+    Checks if the current environment is Google Colab.
+
+    Returns:
+        bool: True if it's Google Colab, False otherwise.
+    """
     try:
         import google.colab
         return True
-    except:
+    except ImportError:
         return False
 
+def get_filename(url):
+    """
+    Extracts the filename from the given URL.
+
+    Args:
+        url (str): The URL to extract the filename from.
+
+    Returns:
+        str: The filename.
+    """
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    if 'content-disposition' in response.headers:
+        content_disposition = response.headers['content-disposition']
+        filename = re.findall('filename="?([^"]+)"?', content_disposition)[0]
+    else:
+        url_path = urlparse(url).path
+        filename = unquote(os.path.basename(url_path))
+
+    return filename
+
 def get_python_version():
-    try:
-        return sys.version
-    except Exception as e:
-        cprint("Failed to retrieve Python version:", str(e), color="greem")
-        return None
+    """
+    Retrieves the current Python version.
+
+    Returns:
+        str: The Python version.
+    """
+    return sys.version
 
 def get_torch_version():
+    """
+    Retrieves the current PyTorch version.
+
+    Returns:
+        str: The PyTorch version.
+    """
     try: 
         import torch
-    except ImportError:
-        raise ImportError("No torch module found. Please make sure PyTorch is installed.")
-        
-    try:
         return torch.__version__
-    except Exception as e:
-        cprint("Failed to retrieve PyTorch version:", str(e), color="greem")
+    except ImportError:
+        cprint("Failed to retrieve PyTorch version: PyTorch is not installed.", color="red")
         return None
-    
+
 def get_gpu_info(get_gpu_name=False):
+    """
+    Retrieves the GPU info.
+
+    Args:
+        get_gpu_name (bool, optional): Whether to retrieve the GPU name. Default is False.
+
+    Returns:
+        str: The GPU info.
+    """
     command = ["nvidia-smi", "--query-gpu=gpu_name", "--format=csv"]
     result = subprocess.run(command, capture_output=True, text=True)
 
