@@ -3,7 +3,6 @@ import gc
 import torch
 import json
 import hashlib
-from torch import load
 from safetensors.torch import load_file, safe_open
 from ..colored_print import cprint
 
@@ -37,29 +36,31 @@ class Validator:
         Validates the model by attempting to load it.
         """
         if Validator.is_safetensors(model_path):
-            return Validator._attempt_load(model_path, load_file, map_location, ".ckpt")
+            try:
+                tmp = load_file(model_path, device=map_location)
+                del tmp
+                gc.collect()
+                torch.cuda.empty_cache()
+            except Exception as e:
+                print(e)
+                new_model_path = os.path.splitext(model_path)[0] + ".ckpt"
+                os.rename(model_path, new_model_path)
+                cprint(f"Model Info: model renamed to {os.path.basename(new_model_path)}", color="green")
+                return new_model_path
         elif Validator.is_ckpt(model_path):
-            return Validator._attempt_load(model_path, load, map_location, ".safetensors")
-        else:
-            return None
-
-    @staticmethod
-    def _attempt_load(model_path, load_func, map_location, new_ext):
-        """
-        Attempts to load a model given a specific load function, map location, and new extension.
-        """
-        try:
-            tmp = load_func(model_path, device=map_location)
-            del tmp
-            gc.collect()
-            torch.cuda.empty_cache()
-        except Exception:
-            new_model_path = os.path.splitext(model_path)[0] + new_ext
-            os.rename(model_path, new_model_path)
-            cprint(f"Model Info: model renamed to {os.path.basename(new_model_path)}", color="green")
-            return new_model_path
+            try:
+                tmp = torch.load(model_path, map_location=map_location)
+                del tmp
+                gc.collect()
+                torch.cuda.empty_cache()
+            except Exception as e:
+                cprint(e)
+                new_model_path = os.path.splitext(model_path)[0] + ".safetensors"
+                os.rename(model_path, new_model_path)
+                cprint(e, f"Model Info: model renamed to {os.path.basename(new_model_path)}", color="green")
+                return new_model_path
         return None
-
+    
     @staticmethod
     def validate_vae(vae_path):
         """
@@ -130,6 +131,11 @@ class Validator:
                             "algo"      : lora_algo,
                             "unit"      : lora_unit,
                         }
+                        
+                        json_output_path = os.path.splitext(lora_path)[0] + '.json'
+
+                        with open(json_output_path, 'w') as outfile:
+                            json.dump(data_dict, outfile)
 
                         output_list = [f"{key}: {value}" for key, value in data_dict.items() if value is not None]
                         

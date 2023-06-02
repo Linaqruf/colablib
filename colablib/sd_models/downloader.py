@@ -6,9 +6,6 @@ from pathlib import Path
 from ..colored_print import cprint
 from ..utils.py_utils import get_filename
 
-hf_token = "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"
-user_header = f"Authorization: Bearer {hf_token}"
-
 def get_supported_extensions():
     return tuple([".ckpt", ".safetensors", ".pt", ".pth"])
 
@@ -71,7 +68,7 @@ def get_modelname(url, quiet=True):
             cprint(f"Failed to obtain filename.", color="green")
         return None
     
-def download(url, dst):
+def download(url, dst, user_header=None):
     filename    = get_modelname(url, quiet=False)
 
     if "drive.google.com" in url:
@@ -83,7 +80,7 @@ def download(url, dst):
         if "huggingface.co" in url:
             if "/blob/" in url:
                 url = url.replace("/blob/", "/resolve/")
-        aria2_download(dst, filename, url)
+        aria2_download(dst, filename, url, user_header=user_header)
 
 def get_most_recent_file(directory):
     extensions = get_supported_extensions()
