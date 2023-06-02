@@ -5,7 +5,7 @@ import requests
 import shutil
 from .py_utils import get_filename
 from tqdm import tqdm
-from .cprint import cprint
+from ..colored_print import cprint
 
 def ubuntu_deps(url, dst, desc=None):
     """
@@ -29,7 +29,7 @@ def ubuntu_deps(url, dst, desc=None):
         deps.extractall(dst)
 
     if desc is None:
-        desc = cprint("Installing", color="green", tqdm_desc=True)
+        desc = cprint("Installing...", color="green", tqdm_desc=True)
 
     deb_files = [os.path.join(dst, f) for f in os.listdir(dst) if f.endswith('.deb')]
     for deb_file in tqdm(deb_files, desc=desc):

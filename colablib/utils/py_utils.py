@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time 
 from urllib.parse import urlparse, unquote
-from .cprint import cprint
+from ..colored_print import cprint
 
 def is_google_colab():
     """

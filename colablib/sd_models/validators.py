@@ -5,7 +5,7 @@ import json
 import hashlib
 from torch import load
 from safetensors.torch import load_file, safe_open
-from .cprint import cprint
+from ..colored_print import cprint
 
 class Validator:
     """

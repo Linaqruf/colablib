@@ -3,8 +3,8 @@ import gdown
 import os
 import glob
 from pathlib import Path
-from .cprint import cprint
-from .py_utils import get_filename
+from ..colored_print import cprint
+from ..utils.py_utils import get_filename
 
 hf_token = "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"
 user_header = f"Authorization: Bearer {hf_token}"

@@ -1,6 +1,6 @@
 import subprocess
 import sys
-from .cprint import cprint
+from ..colored_print import cprint
 
 def clone_repo(url, directory=None, branch=None, commit_hash=None):
     """
