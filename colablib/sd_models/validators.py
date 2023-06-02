@@ -131,11 +131,11 @@ class Validator:
                             "algo"      : lora_algo,
                             "unit"      : lora_unit,
                         }
-                        
+
                         json_output_path = os.path.splitext(lora_path)[0] + '.json'
 
                         with open(json_output_path, 'w') as outfile:
-                            json.dump(data_dict, outfile)
+                            json.dump(data_dict, outfile, indent=4)
 
                         output_list = [f"{key}: {value}" for key, value in data_dict.items() if value is not None]
                         
