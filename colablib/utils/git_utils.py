@@ -49,11 +49,11 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
             message = f"Cloning '{parsed_url}' failed."
 
         if not quiet and not batch:
-            color = "green" if "Failed" not in message and "Error" not in message else "red"
+            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
             cprint(message, color=color)
             
         if commit_hash and directory:
-            checkout_repo(directory, commit_hash, quiet=quiet)
+            checkout_repo(directory, commit_hash, quiet=quiet, batch=batch)
 
     except Exception as e:
         message = f"Error while cloning the repository: {e}"
@@ -64,7 +64,7 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
 
     return message
 
-def checkout_repo(directory, reference, create=False, args="", quiet=False):
+def checkout_repo(directory, reference, create=False, args="", quiet=False, batch=False):
     cmd = ["git", "checkout"]
     if create:
         cmd.append("-b")
@@ -87,9 +87,11 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False):
     else:
         message = "Checkout failed"
 
-    if not quiet:
-        color = "green" if "Failed" not in message and "Error" not in message else "red"
+    if not quiet and not batch:
+        color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
         cprint(message, color=color)
+
+
     return message
 
 def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=False, batch=False):
@@ -134,7 +136,7 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
                 message = f"Failed to pull the repository in '{cwd}'"
         
         if not quiet and not batch:
-            color = "green" if "Failed" not in message and "Error" not in message else "red"
+            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
             cprint(message, color=color)
 
     except Exception as e:
@@ -176,7 +178,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
             
     if not quiet:
         for future, message in results.items():
-            color = "green" if "Failed" not in message and "Error" not in message else "red"
+            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
             cprint(" [-] ", message, color=color)
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True):
@@ -207,7 +209,7 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
 
     if not quiet:
         for future, message in results.items():
-            color = "green" if "Failed" not in message and "Error" not in message else "red"
+            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
             cprint(" [-] ", message, color=color)
 
 def validate_repo(directory):
