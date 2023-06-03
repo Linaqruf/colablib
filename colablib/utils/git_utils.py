@@ -26,11 +26,11 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
 
         if cwd is not None:
             if os.path.exists(os.path.join(cwd, parsed_url)):
-                cprint(f"Directory {os.path.join(cwd, parsed_url)} already exists.", color="yellow")
+                cprint(f"Directory '{parsed_url}' already exists.", color="yellow")
                 return
         else: 
             if os.path.exists(directory):
-                cprint(f"Directory {directory} already exists.", color="yellow")
+                cprint(f"Directory '{parsed_url}' already exists.", color="yellow")
                 return
 
         cmd = ["git", "clone", url]
@@ -41,11 +41,12 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
         if directory:
             cmd.append(directory)
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
-        if "Cloning into" in result.stdout and "done." in result.stdout:
-            message = f"Cloning `{url}` to `{os.path.join(cwd, directory) if cwd else directory}` was successful."
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output_log = result.stdout.decode()
+        if "Cloning into" in output_log and "done." in output_log:
+            message = f"Cloning '{parsed_url}' was successful."
         else:
-            message = f"Cloning `{url}` to `{os.path.join(cwd, directory) if cwd else directory}` failed."
+            message = f"Cloning '{parsed_url}' failed."
 
         if not quiet and not batch:
             color = "green" if "Failed" not in message and "Error" not in message else "red"
@@ -70,17 +71,18 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False):
     cmd.append(reference)
     if args:
         cmd.extend(args.split())
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=directory, check=True)
-
-    if "Switched to branch" in result.stdout or "HEAD is now at" in result.stdout:
+    result = subprocess.run(cmd, cwd=directory, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output_log = result.stdout.decode()
+    
+    if "Switched to branch" in output_log or "HEAD is now at" in output_log:
         message = f"Checkout successful. You are now at {reference}"
-    elif "error: pathspec" in result.stdout and "did not match any file(s)" in result.stdout:
+    elif "error: pathspec" in output_log and "did not match any file(s)" in output_log:
         message = f"Checkout failed. Invalid or non-existent reference: {reference}"
-    elif "error: Your local changes" in result.stdout and "would be overwritten by checkout" in result.stdout:
+    elif "error: Your local changes" in output_log and "would be overwritten by checkout" in output_log:
         message = "Checkout failed. Please commit or stash your changes before switching branches."
-    elif "warning: short SHA1" in result.stdout and "is ambiguous" in result.stdout:
+    elif "warning: short SHA1" in output_log and "is ambiguous" in output_log:
         message = "Checkout failed. Ambiguous reference: " + reference
-    elif "warning: refname" in result.stdout and "is ambiguous" in result.stdout:
+    elif "warning: refname" in output_log and "is ambiguous" in output_log:
         message = "Checkout failed. Ambiguous reference: " + reference
     else:
         message = "Checkout failed"
@@ -114,7 +116,7 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
             cmd = ["git", "fetch"]
             if origin:
                 cmd.append(origin)
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 message = f"Failed to fetch the repository in {cwd}"
 
@@ -122,10 +124,11 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
             cmd = ["git", "pull"]
             if args:
                 cmd.extend(args.split(" "))
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
-            if "Already up to date." in result.stdout:
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output_log = result.stdout.decode()
+            if "Already up to date." in output_log:
                 message = f"No new changes. '{repo_name}' is already up to date."
-            elif "Fast-forward" in result.stdout:
+            elif "Fast-forward" in output_log:
                 message = f"Pull successful. '{repo_name}' updated to the latest version"
             elif result.returncode != 0:
                 message = f"Failed to pull the repository in '{cwd}'"
