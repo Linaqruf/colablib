@@ -48,6 +48,46 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
         cprint(f"Error while cloning the repository: {e}", color="red")
         sys.exit(1)
 
+def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", verbose=False):
+    """
+    Updates a Git repository using fetch and/or pull.
+
+    Args:
+        fetch (bool, optional): Flag to perform a fetch. Defaults to False.
+        pull (bool, optional): Flag to perform a pull. Defaults to False.
+        origin (str, optional): The remote to update from. Defaults to None.
+        cwd (str, optional): The working directory for the subprocess command. Defaults to None.
+        args (str, optional): Additional arguments for the git command. Defaults to "".
+        verbose (bool, optional): Flag to print update status. Defaults to False.
+
+    """
+    try:
+        cmd = []
+        
+        if fetch:
+            cmd = ["git", "fetch"]
+            if origin:
+                cmd.append(origin)
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
+            if verbose and result.returncode != 0:
+                cprint(f"Failed to fetch the repository in {cwd}", color="red")
+
+        if pull:
+            cmd = ["git", "pull"]
+            if args:
+                cmd.extend(args.split(" "))
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
+            if verbose:
+                if "Already up to date." in result.stdout:
+                    cprint(f"Repository in {cwd} is already up to date.", color="green")
+                elif result.returncode != 0:
+                    cprint(f"Failed to pull the repository in {cwd}", color="red")
+
+    except Exception as e:
+        cprint(f"Error while updating the repository: {e}", color="red")
+        sys.exit(1)
+
+
 def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False):
     """
     Clones multiple Git repositories in parallel.
@@ -73,7 +113,33 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
             except Exception as e:
                 cprint(f"Error while cloning a repository: {e}", color="red")
                 sys.exit(1)
-        
+
+def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", verbose=False):
+    """
+    Updates multiple Git repositories in parallel using fetch and/or pull.
+
+    Args:
+        fetch (bool, optional): Flag to perform a fetch. Defaults to False.
+        pull (bool, optional): Flag to perform a pull. Defaults to False.
+        origin (str, optional): The remote to update from. Defaults to None.
+        directory (str or list, optional): The directory or directories where the repositories are located.
+        args (str, optional): Additional arguments for the git command. Defaults to "".
+        verbose (bool, optional): Flag to print update status. Defaults to False.
+
+    """
+    if not isinstance(directory, list):
+        directory = [os.path.join(directory, name) for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(update_repo, fetch=fetch, pull=pull, origin=origin, cwd=cwd, args=args, verbose=verbose): cwd for cwd in directory}
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(directory), desc="Updating..."):
+            try:
+                future.result()
+            except Exception as e:
+                cprint(f"Error while updating a repository: {e}", color="red")
+                sys.exit(1)
+
+
 def validate_repo(directory):
     """
     Validates a Git repository.
