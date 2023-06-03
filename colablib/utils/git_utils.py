@@ -114,8 +114,6 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
     try:
         repo_name, _, _ = validate_repo(cwd)
 
-        message = "No operation performed."
-
         if fetch:
             cmd = ["git", "fetch"]
             if origin:
