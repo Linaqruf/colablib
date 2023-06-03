@@ -233,7 +233,7 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
                         color = "yellow"
                     else:
                         color = "red"
-            cprint(" [-] ", message, color=color)
+                cprint(" [-] ", message, color=color)
 
 def validate_repo(directory):
     """
