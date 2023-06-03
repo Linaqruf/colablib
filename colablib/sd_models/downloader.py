@@ -30,7 +30,7 @@ def parse_args(config):
 
     return args
 
-def aria2_download(download_dir, filename, url, user_header=None):
+def aria2_download(download_dir, filename, url, quiet=False, user_header=None):
     """
     Downloads a file using the aria2 download manager.
 
@@ -40,7 +40,8 @@ def aria2_download(download_dir, filename, url, user_header=None):
         url             (str)           : URL to download the file from.
         user_header     (str, optional) : Optional header to use for the download request. Defaults to None.
     """
-    cprint(f"Starting download of '{filename}'...", color="green")
+    if quiet:
+        cprint(f"Starting download of '{filename}'...", color="green")
 
     aria2_config = {
         "console-log-level"         : "error",
@@ -57,9 +58,10 @@ def aria2_download(download_dir, filename, url, user_header=None):
     aria2_args = parse_args(aria2_config)
     subprocess.run(["aria2c", *aria2_args])
 
-    cprint(f"Download of '{filename}' completed.", color="green")
+    if quiet:
+        cprint(f"Download of '{filename}' completed.", color="green")
 
-def gdown_download(url, dst):
+def gdown_download(url, dst, quiet=False):
     """
     Downloads a file from a Google Drive URL using gdown.
 
@@ -70,7 +72,8 @@ def gdown_download(url, dst):
     Returns:
         The output of the gdown download function.
     """
-    cprint(f"Starting download from {url}...", color="green")
+    if not quiet:
+        cprint(f"Starting download from {url}...", color="green")
 
     options = {
         "uc?id"         : {},
@@ -87,10 +90,12 @@ def gdown_download(url, dst):
     os.chdir(dst)
     output = gdown.download_folder(url, quiet=True, use_cookies=False)
 
-    cprint(f"Download completed.", color="green")
+    if not quiet:
+        cprint(f"Download completed.", color="green")
+
     return output
 
-def get_modelname(url, quiet=True):
+def get_modelname(url, quiet=False):
     """
     Retrieves the model name from a given URL.
 
@@ -112,7 +117,7 @@ def get_modelname(url, quiet=True):
         cprint(f"Failed to obtain filename.", color="green")
     return None
 
-def download(url, dst, user_header=None):
+def download(url, dst, user_header=None, quiet=False):
     """
     Downloads a file from a given URL to a destination directory.
 
@@ -124,17 +129,19 @@ def download(url, dst, user_header=None):
     filename = get_modelname(url, quiet=False)
 
     if "drive.google.com" in url:
-        gdown_download(url, dst)
+        gdown_download(url, dst, quiet=quiet)
     elif url.startswith("/content/drive/MyDrive/"):
-        cprint(f"Copying file '{filename}'...", color="green")
+        if not quiet:
+            cprint(f"Copying file '{filename}'...", color="green")
         Path(os.path.join(dst, filename)).write_bytes(Path(url).read_bytes())
-        cprint(f"Copying completed.", color="green")
+        if not quiet:
+            cprint(f"Copying completed.", color="green")
     else:
         if "huggingface.co" in url:
             url = url.replace("/blob/", "/resolve/")
-        aria2_download(dst, filename, url, user_header=user_header)
+        aria2_download(dst, filename, url, user_header=user_header, quiet=quiet)
 
-def get_most_recent_file(directory):
+def get_most_recent_file(directory, quiet=False):
     """
     Gets the most recent file in a given directory.
 
@@ -148,18 +155,20 @@ def get_most_recent_file(directory):
 
     files = glob.glob(os.path.join(directory, "*"))
     if not files:
-        cprint("No files found in directory.", color="green")
+        if not quiet:
+            cprint("No files found in directory.", color="green")
         return None
 
     most_recent_file = max(files, key=os.path.getmtime)
     basename = os.path.basename(most_recent_file)
 
     if basename.endswith(SUPPORTED_EXTENSIONS):
-        cprint(f"Filename obtained: {basename}", color="green")
+        if not quiet:
+            cprint(f"Filename obtained: {basename}", color="green")
 
     return most_recent_file
 
-def get_filepath(url, dst):
+def get_filepath(url, dst, quiet=False):
     """
     Returns the filepath of the model for a given URL and destination directory.
 
@@ -170,10 +179,10 @@ def get_filepath(url, dst):
     Returns:
         str         : The filepath of the model.
     """
-    filename = get_modelname(url)
+    filename = get_modelname(url, quiet=quiet)
 
     if not filename or not filename.endswith(SUPPORTED_EXTENSIONS):
-        most_recent_file = get_most_recent_file(dst)
+        most_recent_file = get_most_recent_file(dst, quiet=quiet)
         filename = os.path.basename(most_recent_file)
 
     return os.path.join(dst, filename)

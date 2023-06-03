@@ -136,9 +136,9 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
             if result.returncode != 0:
                 message = f"Error while pulling the repository in {cwd}: {result.stderr}"
             elif "Already up to date." in result.stdout:
-                message = f"No new changes. '{repo_name}' is already up to date."
+                message = f"'{repo_name}' is already up to date."
             else:
-                message = f"Pull successful. '{repo_name}' updated to the latest version"
+                message = f"'{repo_name}' updated to the latest version"
 
         if not quiet and not batch:
             color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
@@ -192,7 +192,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
                 color = "red"
             cprint(" [-] ", message, color=color)
 
-def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True, desc=None):
+def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=False, desc=None):
     """
     Updates multiple Git repositories in parallel using fetch and/or pull.
 
