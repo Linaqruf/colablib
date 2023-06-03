@@ -1,5 +1,4 @@
 import subprocess
-import sys
 import os
 import concurrent.futures
 from tqdm import tqdm
@@ -185,16 +184,15 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
     if not quiet:
         cprint()
         for future, message in results.items():
-            if not any(item.lower() in message.lower() for item in ["failed", "error"]):
+            if "already exists" in message.lower():
+                color = "yellow"
+            elif not any(item.lower() in message.lower() for item in ["failed", "error"]):
                 color = "green"
             else:
-                if "already exists" in message.lower():
-                    color = "yellow"
-                else:
-                    color = "red"
+                color = "red"
             cprint(" [-] ", message, color=color)
 
-def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True):
+def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True, desc=None):
     """
     Updates multiple Git repositories in parallel using fetch and/or pull.
 
@@ -205,6 +203,7 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
         directory (str or list, optional): The directory or directories where the repositories are located. Defaults to None.
         args (str, optional): Additional arguments for the git command. Defaults to "".
         quiet (bool, optional): Flag to suppress print update status. Defaults to True.
+        desc        (str, optional)     : The description to display on the progress bar. Defaults to "Updating...".
     """
     if not isinstance(directory, list):
         directory = [os.path.join(directory, name) for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]
