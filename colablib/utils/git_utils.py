@@ -136,7 +136,8 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
             if result.returncode != 0:
                 message = f"Error while pulling the repository in {cwd}: {result.stderr}"
             elif "Already up to date." in result.stdout:
-                message = f"'{repo_name}' is already up to date."
+                # message = f"'{repo_name}' is already up to date."
+                pass
             else:
                 message = f"'{repo_name}' updated to the latest version"
 

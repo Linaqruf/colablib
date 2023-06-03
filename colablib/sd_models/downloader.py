@@ -40,7 +40,7 @@ def aria2_download(download_dir, filename, url, quiet=False, user_header=None):
         url             (str)           : URL to download the file from.
         user_header     (str, optional) : Optional header to use for the download request. Defaults to None.
     """
-    if quiet:
+    if not quiet:
         cprint(f"Starting download of '{filename}'...", color="green")
 
     aria2_config = {
@@ -58,7 +58,7 @@ def aria2_download(download_dir, filename, url, quiet=False, user_header=None):
     aria2_args = parse_args(aria2_config)
     subprocess.run(["aria2c", *aria2_args])
 
-    if quiet:
+    if not quiet:
         cprint(f"Download of '{filename}' completed.", color="green")
 
 def gdown_download(url, dst, quiet=False):
