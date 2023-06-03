@@ -114,6 +114,8 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
     try:
         repo_name, _, _ = validate_repo(cwd)
 
+        message = ""
+
         if fetch:
             cmd = ["git", "fetch"]
             if origin:
@@ -181,13 +183,14 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
     if not quiet:
         cprint()
         for future, message in results.items():
-            if "already exists" in message.lower():
-                color = "yellow"
-            elif not any(item.lower() in message.lower() for item in ["failed", "error"]):
-                color = "green"
-            else:
-                color = "red"
-            cprint(" [-] ", message, color=color)
+            if message:
+                if "already exists" in message.lower():
+                    color = "yellow"
+                elif not any(item.lower() in message.lower() for item in ["failed", "error"]):
+                    color = "green"
+                else:
+                    color = "red"
+                cprint(" [-] ", message, color=color)
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=False, desc=None):
     """
