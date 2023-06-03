@@ -124,8 +124,6 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
 
             if result.returncode != 0:
                 message = f"Error while fetching the repository in {cwd}: {result.stderr}"
-            else:
-                message = f"Fetch successful for the repository in {cwd}"
 
         if pull:
             cmd = ["git", "pull"]
