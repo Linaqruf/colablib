@@ -23,7 +23,7 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
 
         if not directory:
             directory = parsed_url
-
+            
         if os.path.exists(os.path.join(cwd, parsed_url) if cwd else directory):
             message = f"Directory '{parsed_url}' already exists."
             if not quiet and not batch:
@@ -39,13 +39,12 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
         if directory:
             cmd.append(directory)
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
-        output_log = result.stdout
+        result = subprocess.run(cmd, text=True, cwd=cwd, capture_output=True)
 
-        if "Cloning into" in output_log and "done." in output_log:
+        if result.returncode == 0:
             message = f"Cloning '{parsed_url}' was successful."
         else:
-            message = f"Cloning '{parsed_url}' failed."
+            message = f"Cloning '{parsed_url}' failed. Error: {result.stderr}"
 
         if not quiet and not batch:
             color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
@@ -83,18 +82,12 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False, batc
         if args:
             cmd.extend(args.split())
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=directory, check=True)
-        output_log = result.stdout
-        error_log = result.stderr
-        
-        if error_log:
-            message = f"Error while checking out the repository: {error_log}"
-        elif "Switched to branch" in output_log or "HEAD is now at" in output_log:
+        result = subprocess.run(cmd, text=True, cwd=directory, capture_output=True)
+
+        if result.returncode == 0:
             message = f"Checkout successful. You are now at {reference}"
         else:
-            message = "Checkout failed"
-    except subprocess.CalledProcessError as e:
-        message = f"Error while checking out the repository: {e.stderr.decode()}"
+            message = f"Checkout failed. Error: {result.stderr}"
     except Exception as e:
         message = f"An unexpected error occurred while checking out the repository: {str(e)}"
 
@@ -103,6 +96,7 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False, batc
         cprint(message, color=color)
 
     return message
+
 
 def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=False, batch=False):
     """
@@ -117,9 +111,9 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
         quiet   (bool)  : Whether to suppress the output. Defaults to False.
         batch   (bool)  : Whether this is a batch operation. Defaults to False.
     """
-   
+
     try:
-        repo_name, _, _ = validate_repo(cwd)  # Add definition or import statement for validate_repo()
+        repo_name, _, _ = validate_repo(cwd)
 
         message = "No operation performed."
 
@@ -127,12 +121,10 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
             cmd = ["git", "fetch"]
             if origin:
                 cmd.append(origin)
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
-            output_log = result.stdout
-            error_log = result.stderr
+            result = subprocess.run(cmd, text=True, cwd=cwd, capture_output=True)
 
-            if error_log:
-                message = f"Error while fetching the repository in {cwd}: {error_log}"
+            if result.returncode != 0:
+                message = f"Error while fetching the repository in {cwd}: {result.stderr}"
             else:
                 message = f"Fetch successful for the repository in {cwd}"
 
@@ -140,17 +132,15 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
             cmd = ["git", "pull"]
             if args:
                 cmd.extend(args.split(" "))
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
-            output_log = result.stdout
-            error_log = result.stderr
-            
-            if error_log:
-                message = f"Error while pulling the repository in {cwd}: {error_log}"
-            elif "Already up to date." in output_log:
+            result = subprocess.run(cmd, text=True, cwd=cwd, capture_output=True)
+
+            if result.returncode != 0:
+                message = f"Error while pulling the repository in {cwd}: {result.stderr}"
+            elif "Already up to date." in result.stdout:
                 message = f"No new changes. '{repo_name}' is already up to date."
             else:
                 message = f"Pull successful. '{repo_name}' updated to the latest version"
-        
+
         if not quiet and not batch:
             color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
             cprint(message, color=color)
@@ -193,8 +183,15 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
                 return None
             
     if not quiet:
+        cprint()
         for future, message in results.items():
-            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else ("yellow" if "already exists" in message else "red")
+            if not any(item.lower() in message.lower() for item in ["failed", "error"]):
+                color = "green"
+            else:
+                if "already exists" in message.lower():
+                    color = "yellow"
+                else:
+                    color = "red"
             cprint(" [-] ", message, color=color)
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True):
@@ -227,8 +224,15 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
                 return None
 
     if not quiet:
+        cprint()
         for future, message in results.items():
-            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
+            if not any(item.lower() in message.lower() for item in ["failed", "error"]):
+                color = "green"
+            else:
+                if "already exists" in message.lower():
+                    color = "yellow"
+                else:
+                    color = "red"
             cprint(" [-] ", message, color=color)
 
 def validate_repo(directory):
