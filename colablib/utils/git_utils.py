@@ -47,6 +47,32 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
     except Exception as e:
         cprint(f"Error while cloning the repository: {e}", color="red")
         sys.exit(1)
+
+def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False):
+    """
+    Clones multiple Git repositories in parallel.
+
+    Args:
+        urls (list): The URLs of the Git repositories.
+        desc (str, optional): The description to display on the progress bar. Defaults to "Cloning...".
+        cwd (str, optional): The working directory for the subprocess command. Defaults to None.
+        directory (str, optional): The directory where the repositories should be cloned to. Defaults to None.
+        branch (str, optional): The branch to checkout. Defaults to None.
+        commit_hash (str, optional): The commit hash to checkout. Defaults to None.
+        recursive (bool, optional): Flag to recursively clone submodules. Defaults to False.
+    """
+    if desc is None:
+        desc = cprint("Cloning...", color="green", tqdm_desc=True)
+
+    # Use a ThreadPoolExecutor to clone repositories in parallel
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(clone_repo, url, cwd=cwd, directory=directory, branch=branch, commit_hash=commit_hash, recursive=recursive): url for url in urls}
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(urls), desc=desc):
+            try:
+                future.result()
+            except Exception as e:
+                cprint(f"Error while cloning a repository: {e}", color="red")
+                sys.exit(1)
         
 def validate_repo(directory):
     """
@@ -84,30 +110,3 @@ def validate_repo(directory):
 
     return repo_name, current_commit_hash, current_branch
 
-class Batch:
-    @staticmethod
-    def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False):
-        """
-        Clones multiple Git repositories in parallel.
-
-        Args:
-            urls (list): The URLs of the Git repositories.
-            desc (str, optional): The description to display on the progress bar. Defaults to "Cloning...".
-            cwd (str, optional): The working directory for the subprocess command. Defaults to None.
-            directory (str, optional): The directory where the repositories should be cloned to. Defaults to None.
-            branch (str, optional): The branch to checkout. Defaults to None.
-            commit_hash (str, optional): The commit hash to checkout. Defaults to None.
-            recursive (bool, optional): Flag to recursively clone submodules. Defaults to False.
-        """
-        if desc is None:
-            desc = cprint("Cloning...", color="green", tqdm_desc=True)
-
-        # Use a ThreadPoolExecutor to clone repositories in parallel
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(clone_repo, url, cwd=cwd, directory=directory, branch=branch, commit_hash=commit_hash, recursive=recursive): url for url in urls}
-            for future in tqdm(concurrent.futures.as_completed(futures), total=len(urls), desc=desc):
-                try:
-                    future.result()
-                except Exception as e:
-                    cprint(f"Error while cloning a repository: {e}", color="red")
-                    sys.exit(1)
