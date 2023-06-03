@@ -197,13 +197,13 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
     Updates multiple Git repositories in parallel using fetch and/or pull.
 
     Args:
-        fetch (bool, optional): Flag to perform a fetch. Defaults to False.
-        pull (bool, optional): Flag to perform a pull. Defaults to True.
-        origin (str, optional): The remote to update from. Defaults to None.
-        directory (str or list, optional): The directory or directories where the repositories are located. Defaults to None.
-        args (str, optional): Additional arguments for the git command. Defaults to "".
-        quiet (bool, optional): Flag to suppress print update status. Defaults to True.
-        desc        (str, optional)     : The description to display on the progress bar. Defaults to "Updating...".
+        fetch       (bool, optional)        : Flag to perform a fetch. Defaults to False.
+        pull        (bool, optional)        : Flag to perform a pull. Defaults to True.
+        origin      (str, optional)         : The remote to update from. Defaults to None.
+        directory   (str or list, optional) : The directory or directories where the repositories are located. Defaults to None.
+        args        (str, optional)         : Additional arguments for the git command. Defaults to "".
+        quiet       (bool, optional)        : Flag to suppress print update status. Defaults to True.
+        desc        (str, optional)         : The description to display on the progress bar. Defaults to "Updating...".
     """
     if not isinstance(directory, list):
         directory = [os.path.join(directory, name) for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]

@@ -44,7 +44,6 @@ def calculate_elapsed_time(start_time):
     else:
         mins, secs = divmod(elapsed_time, 60)
         return f"{mins} mins {secs} sec"
-
     
 def get_filename(url):
     """

@@ -1,6 +1,5 @@
 import os
 import zipfile
-import subprocess
 import requests
 import shutil
 from .py_utils import get_filename
@@ -24,16 +23,22 @@ def ubuntu_deps(url, dst, desc=None):
     with open(filename, 'wb') as file:
         for chunk in response.iter_content(chunk_size=8192):
             file.write(chunk)
+
+    if filename.endswith(".zip"):
+        with zipfile.ZipFile(filename, "r") as deps:
+            deps.extractall(dst)
+
+        if desc is None:
+            desc = cprint("Installing...", color="green", tqdm_desc=True)
+
+        deb_files = [os.path.join(dst, f) for f in os.listdir(dst) if f.endswith('.deb')]
+        for deb_file in tqdm(deb_files, desc=desc):
+            os.system(f'dpkg -i {deb_file}')
             
-    with zipfile.ZipFile(filename, "r") as deps:
-        deps.extractall(dst)
+        os.remove(filename)
+        shutil.rmtree(dst)
 
-    if desc is None:
-        desc = cprint("Installing...", color="green", tqdm_desc=True)
-
-    deb_files = [os.path.join(dst, f) for f in os.listdir(dst) if f.endswith('.deb')]
-    for deb_file in tqdm(deb_files, desc=desc):
+    elif filename.endswith(".deb"):
+        deb_file = os.path.join(dst, filename)
         os.system(f'dpkg -i {deb_file}')
-        
-    os.remove(filename)
-    shutil.rmtree(dst)
+
