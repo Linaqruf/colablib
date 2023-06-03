@@ -24,14 +24,12 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
         if not directory:
             directory = parsed_url
 
-        if cwd is not None:
-            if os.path.exists(os.path.join(cwd, parsed_url)):
-                cprint(f"Directory '{parsed_url}' already exists.", color="yellow")
-                return
-        else: 
-            if os.path.exists(directory):
-                cprint(f"Directory '{parsed_url}' already exists.", color="yellow")
-                return
+        if os.path.exists(os.path.join(cwd, parsed_url) if cwd else directory):
+            message = f"Directory '{parsed_url}' already exists."
+            if not quiet and not batch:
+                color = "yellow"
+                cprint(message, color=color)
+            return message
 
         cmd = ["git", "clone", url]
         if branch:
@@ -43,11 +41,8 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
 
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
         output_log = result.stdout
-        error_log = result.stderr
 
-        if error_log:
-            message = f"Error while cloning the repository: {error_log}"
-        elif "Cloning into" in output_log and "done." in output_log:
+        if "Cloning into" in output_log and "done." in output_log:
             message = f"Cloning '{parsed_url}' was successful."
         else:
             message = f"Cloning '{parsed_url}' failed."
@@ -122,8 +117,7 @@ def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=Fa
         quiet   (bool)  : Whether to suppress the output. Defaults to False.
         batch   (bool)  : Whether this is a batch operation. Defaults to False.
     """
-    # ... function body ...
-    
+   
     try:
         repo_name, _, _ = validate_repo(cwd)  # Add definition or import statement for validate_repo()
 
@@ -200,7 +194,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
             
     if not quiet:
         for future, message in results.items():
-            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
+            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red" "yellow" if "already exists" in message color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else ("yellow" if "already exists" in message else "red")
             cprint(" [-] ", message, color=color)
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True):
