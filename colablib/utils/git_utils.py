@@ -6,12 +6,13 @@ from tqdm import tqdm
 from urllib.parse import urlparse
 from ..colored_print import cprint
 
-def clone_repo(url, directory=None, branch=None, commit_hash=None, recursive=False):
+def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False):
     """
     Clones a Git repository.
 
     Args:
         url (str): The URL of the Git repository.
+        cwd (str, optional): The working directory for the subprocess command. Defaults to None.
         directory (str, optional): The directory where the repository should be cloned to. Defaults to None.
         branch (str, optional): The branch to checkout. Defaults to None.
         commit_hash (str, optional): The commit hash to checkout. Defaults to None.
@@ -35,30 +36,32 @@ def clone_repo(url, directory=None, branch=None, commit_hash=None, recursive=Fal
         if directory:
             cmd.append(directory)
 
-        result = subprocess.run(cmd, check=True)
+        result = subprocess.run(cmd, check=True, cwd=cwd)
         if commit_hash and directory:
             subprocess.run(["git", "checkout", commit_hash], cwd=directory, check=True)
     except Exception as e:
         cprint(f"Error while cloning the repository: {e}", color="red")
         sys.exit(1)
 
-def batch_clone(urls, desc="Cloning...", directory=None, branch=None, commit_hash=None, recursive=False):
+def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False):
     """
     Clones multiple Git repositories in parallel.
 
     Args:
         urls (list): The URLs of the Git repositories.
         desc (str, optional): The description to display on the progress bar. Defaults to "Cloning...".
+        cwd (str, optional): The working directory for the subprocess command. Defaults to None.
         directory (str, optional): The directory where the repositories should be cloned to. Defaults to None.
         branch (str, optional): The branch to checkout. Defaults to None.
         commit_hash (str, optional): The commit hash to checkout. Defaults to None.
         recursive (bool, optional): Flag to recursively clone submodules. Defaults to False.
     """
-    cprint(desc, color="green", tqdm_desc=True)
+    if desc is None:
+        desc = cprint("Cloning...", color="green", tqdm_desc=True)
 
     # Use a ThreadPoolExecutor to clone repositories in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {executor.submit(clone_repo, url, directory=directory, branch=branch, commit_hash=commit_hash, recursive=recursive): url for url in urls}
+        futures = {executor.submit(clone_repo, url, cwd=cwd, directory=directory, branch=branch, commit_hash=commit_hash, recursive=recursive): url for url in urls}
         for future in tqdm(concurrent.futures.as_completed(futures), total=len(urls), desc=desc):
             try:
                 future.result()
