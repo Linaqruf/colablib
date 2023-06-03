@@ -194,7 +194,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
             
     if not quiet:
         for future, message in results.items():
-            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red" "yellow" if "already exists" in message color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else ("yellow" if "already exists" in message else "red")
+            color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else ("yellow" if "already exists" in message else "red")
             cprint(" [-] ", message, color=color)
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=True):
@@ -212,11 +212,14 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
     if not isinstance(directory, list):
         directory = [os.path.join(directory, name) for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]
 
+    if desc is None:
+        desc = cprint("Updating...", color="green", tqdm_desc=True)
+
     results = {}  # Store update status messages
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {executor.submit(update_repo, fetch=fetch, pull=pull, origin=origin, cwd=cwd, args=args, quiet=quiet, batch=True): cwd for cwd in directory}
-        for future in tqdm(concurrent.futures.as_completed(futures), total=len(directory), desc="Updating..."):
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(directory), desc=desc):
             try:
                 results[future] = future.result()  # Store update status message
             except Exception as e:
