@@ -19,14 +19,19 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
         recursive (bool, optional): Flag to recursively clone submodules. Defaults to False.
     """
     try:
-        # If directory is not provided, use the repository name from the URL
+        parsed_url = urlparse(url).path.split('/')[-1].replace('.git', '')
+
         if not directory:
-            directory = urlparse(url).path.split('/')[-1].replace('.git', '')
-        
-        # If directory exists, notify the user and return.
-        if os.path.exists(directory):
-            cprint(f"Directory {directory} already exists.", color="yellow")
-            return
+            directory = parsed_url
+
+        if cwd is not None:
+            if os.path.exists(os.path.join(cwd, parsed_url)):
+                cprint(f"Directory {os.path.join(cwd, parsed_url)} already exists.", color="yellow")
+                return
+        else: 
+            if os.path.exists(directory):
+                cprint(f"Directory {directory} already exists.", color="yellow")
+                return
 
         cmd = ["git", "clone", url]
         if branch:
