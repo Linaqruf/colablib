@@ -183,7 +183,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
     if not quiet:
         cprint()
         for future, message in results.items():
-            if message:
+            if message != "":
                 if "already exists" in message.lower():
                     color = "yellow"
                 elif not any(item.lower() in message.lower() for item in ["failed", "error"]):
