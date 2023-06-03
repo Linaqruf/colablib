@@ -41,9 +41,13 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
         if directory:
             cmd.append(directory)
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output_log = result.stdout.decode()
-        if "Cloning into" in output_log and "done." in output_log:
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
+        output_log = result.stdout
+        error_log = result.stderr
+
+        if error_log:
+            message = f"Error while cloning the repository: {error_log}"
+        elif "Cloning into" in output_log and "done." in output_log:
             message = f"Cloning '{parsed_url}' was successful."
         else:
             message = f"Cloning '{parsed_url}' failed."
@@ -65,75 +69,93 @@ def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, rec
     return message
 
 def checkout_repo(directory, reference, create=False, args="", quiet=False, batch=False):
-    cmd = ["git", "checkout"]
-    if create:
-        cmd.append("-b")
-    cmd.append(reference)
-    if args:
-        cmd.extend(args.split())
-    result = subprocess.run(cmd, cwd=directory, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output_log = result.stdout.decode()
+    """
+    Checks out a specific reference in a Git repository.
     
-    if "Switched to branch" in output_log or "HEAD is now at" in output_log:
-        message = f"Checkout successful. You are now at {reference}"
-    elif "error: pathspec" in output_log and "did not match any file(s)" in output_log:
-        message = f"Checkout failed. Invalid or non-existent reference: {reference}"
-    elif "error: Your local changes" in output_log and "would be overwritten by checkout" in output_log:
-        message = "Checkout failed. Please commit or stash your changes before switching branches."
-    elif "warning: short SHA1" in output_log and "is ambiguous" in output_log:
-        message = "Checkout failed. Ambiguous reference: " + reference
-    elif "warning: refname" in output_log and "is ambiguous" in output_log:
-        message = "Checkout failed. Ambiguous reference: " + reference
-    else:
-        message = "Checkout failed"
+    Args:
+        directory  (str)   : The directory of the repository.
+        reference  (str)   : The branch or commit hash to checkout.
+        create     (bool)  : Whether to create a new branch. Defaults to False.
+        args       (str)   : Additional arguments for the checkout command. Defaults to "".
+        quiet      (bool)  : Whether to suppress the output. Defaults to False.
+        batch      (bool)  : Whether this is a batch operation. Defaults to False.
+    """
+    try:
+        cmd = ["git", "checkout"]
+        if create:
+            cmd.append("-b")
+        cmd.append(reference)
+        if args:
+            cmd.extend(args.split())
+
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=directory, check=True)
+        output_log = result.stdout
+        error_log = result.stderr
+        
+        if error_log:
+            message = f"Error while checking out the repository: {error_log}"
+        elif "Switched to branch" in output_log or "HEAD is now at" in output_log:
+            message = f"Checkout successful. You are now at {reference}"
+        else:
+            message = "Checkout failed"
+    except subprocess.CalledProcessError as e:
+        message = f"Error while checking out the repository: {e.stderr.decode()}"
+    except Exception as e:
+        message = f"An unexpected error occurred while checking out the repository: {str(e)}"
 
     if not quiet and not batch:
-        color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
+        color = "red" if "Failed" in message or "Error" in message else "green"
         cprint(message, color=color)
-
 
     return message
 
 def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=False, batch=False):
     """
-    Updates a Git repository using fetch and/or pull.
+    Updates a Git repository by fetching and/or pulling new changes.
 
     Args:
-        fetch   (bool, optional)  : Flag to perform a fetch. Defaults to False.
-        pull    (bool, optional)  : Flag to perform a pull. Defaults to False.
-        origin  (str, optional)   : The remote to update from. Defaults to None.
-        cwd     (str, optional)   : The working directory for the subprocess command. Defaults to None.
-        args    (str, optional)   : Additional arguments for the git command. Defaults to "".
-        quiet   (bool, optional)  : Flag to print update status. Defaults to False.
-        batch   (bool, optional)  : Flag for batch verbose output
-    Returns:
-        str                       : Update status message.
+        fetch   (bool)  : Whether to fetch new changes. Defaults to False.
+        pull    (bool)  : Whether to pull new changes. Defaults to True.
+        origin  (str)   : The name of the remote repository to fetch from. Defaults to None.
+        cwd     (str)   : The working directory for the subprocess command. Defaults to None.
+        args    (str)   : Additional arguments for the pull command. Defaults to "".
+        quiet   (bool)  : Whether to suppress the output. Defaults to False.
+        batch   (bool)  : Whether this is a batch operation. Defaults to False.
     """
-    message = ""
-
+    # ... function body ...
+    
     try:
-        repo_name, _, _ = validate_repo(cwd)
+        repo_name, _, _ = validate_repo(cwd)  # Add definition or import statement for validate_repo()
+
+        message = "No operation performed."
 
         if fetch:
             cmd = ["git", "fetch"]
             if origin:
                 cmd.append(origin)
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if result.returncode != 0:
-                message = f"Failed to fetch the repository in {cwd}"
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
+            output_log = result.stdout
+            error_log = result.stderr
+
+            if error_log:
+                message = f"Error while fetching the repository in {cwd}: {error_log}"
+            else:
+                message = f"Fetch successful for the repository in {cwd}"
 
         if pull:
             cmd = ["git", "pull"]
             if args:
                 cmd.extend(args.split(" "))
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            output_log = result.stdout.decode()
-            if "Already up to date." in output_log:
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, check=True)
+            output_log = result.stdout
+            error_log = result.stderr
+            
+            if error_log:
+                message = f"Error while pulling the repository in {cwd}: {error_log}"
+            elif "Already up to date." in output_log:
                 message = f"No new changes. '{repo_name}' is already up to date."
-            elif "Fast-forward" in output_log:
+            else:
                 message = f"Pull successful. '{repo_name}' updated to the latest version"
-            elif result.returncode != 0:
-                message = f"Failed to pull the repository in '{cwd}'"
         
         if not quiet and not batch:
             color = "green" if not any(item in message for item in ["Failed", "Error", "failed", "error"]) else "red"
@@ -247,4 +269,3 @@ def validate_repo(directory):
     repo_name = get_repo_name()
 
     return repo_name, current_commit_hash, current_branch
-
