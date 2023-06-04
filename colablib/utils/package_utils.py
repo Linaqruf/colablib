@@ -4,7 +4,7 @@ import zipfile
 import rarfile
 from ..colored_print import cprint
 
-def extract_package(package_name, target_directory, lz4_overwrite=False):
+def extract_package(package_name, target_directory, overwrite=False):
     """
     Extracts a package. The package can be in either tar, lz4, rar, or zip format.
 
@@ -25,7 +25,7 @@ def extract_package(package_name, target_directory, lz4_overwrite=False):
 
     if package_name.endswith(".tar.lz4"):
         tar_args = ["tar", "-xI", "lz4", "-f", package_name, "--directory", target_directory]
-        if lz4_overwrite:
+        if overwrite:
             tar_args.append("--overwrite-dir")
 
         try:
