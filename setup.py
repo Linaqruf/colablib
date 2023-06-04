@@ -8,6 +8,8 @@ setup(
         'safetensors==0.2.6',
         'requests==2.28.2',
         'tqdm==4.65.0',
+        'PyYAML==6.0',
+        'toml=0.10.2',
     ],
     author='Furqanil Taqwa',
     author_email='furqanil.taqwa@gmail.com',
