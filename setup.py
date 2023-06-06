@@ -13,7 +13,6 @@ setup(
         'toml==0.10.2',
         'rarfile==4.0',
         'xmltodict==0.13.0',
-        'pydantic==',
         'mega.py==1.0.8',
         'pydantic==1.10.8'
     ],
