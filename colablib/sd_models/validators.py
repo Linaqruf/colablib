@@ -3,18 +3,33 @@ import gc
 import torch
 import json
 import hashlib
+import json
+from typing import Optional
+from pydantic import BaseModel, ValidationError
 from safetensors.torch import load_file, safe_open
 from ..colored_print import cprint
+
+class LoraArgs(BaseModel):
+    conv_dim: Optional[int]
+    conv_alpha: Optional[float]
+    algo: Optional[str]
+    unit: Optional[str]
+
+class Metadata(BaseModel):
+    ss_network_args: Optional[str]
+    ss_network_dim: Optional[int]
+    ss_network_alpha: Optional[float]
+    ss_network_module: Optional[str]
+    lora_key_encoding: Optional[str]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 class Validator:
     """
     Validator is a helper class for validating models, vae, and lora. 
     It provides utility methods for checking and loading different types of files.
     """
-
-    # Define lora parameters as class variables
-    lora_args = lora_dim = lora_alpha = lora_module = lora_d8ahazard = None
-    lora_conv_dim = lora_conv_alpha = lora_algo = lora_unit = lora_type = None
 
     @staticmethod
     def is_safetensors(path):
@@ -96,40 +111,38 @@ class Validator:
         Validates lora by checking its metadata.
         """
         try:
-            lora_args = lora_dim = lora_alpha = lora_module = lora_d8ahazard = None
-            lora_conv_dim = lora_conv_alpha = lora_algo = lora_unit = lora_type = None
-
             if Validator.is_safetensors(lora_path):
                 with safe_open(lora_path, framework="pt") as f:
-                    metadata = f.metadata()
+                    raw_metadata = f.metadata()
 
-                if metadata:
-                    lora_args, lora_dim, lora_alpha, lora_module, lora_d8ahazard = (
-                        metadata.get(key) for key in ("ss_network_args", "ss_network_dim", "ss_network_alpha", "ss_network_module", "lora_key_encoding")
-                    )
+                if raw_metadata:
+                    try:
+                        metadata = Metadata(**raw_metadata)
+                    except ValidationError as e:
+                        cprint(f"Metadata validation error: {e}", color="green")
+                        return False, "Invalid metadata"
+
+                    lora_args_dict = json.loads(metadata.ss_network_args) if metadata.ss_network_args else {}
                     
-                    if lora_module is not None:
-                        if lora_args is not None:
-                            lora_args_dict = json.loads(lora_args)
-                            lora_conv_dim, lora_conv_alpha, lora_algo, lora_unit = (
-                                lora_args_dict.get(key) for key in ("conv_dim", "conv_alpha", "algo", "unit")
-                            )
-                            lora_type = Validator.validate_kohya_lora(lora_module, lora_algo, lora_conv_dim, lora_conv_alpha)
-                        else:
-                            if 'networks.lora' in lora_module:
-                                lora_type = "LoRA_LierLa"
-                            else:
-                                del metadata
-                                return (False, "LoRA Info: LoRA is not trained using 'kohya-ss/sd-scripts'")
+                    try:
+                        lora_args = LoraArgs(**lora_args_dict)
+                    except ValidationError as e:
+                        cprint(f"Lora args validation error: {e}", color="green")
+                        return False, "Invalid lora args"
 
+                    lora_type = Validator.validate_kohya_lora(
+                        metadata.ss_network_module, lora_args.algo, lora_args.conv_dim, lora_args.conv_alpha
+                    )
+
+                    if lora_type:
                         data_dict = {
                             "type"      : lora_type,
-                            "dim"       : lora_dim,
-                            "alpha"     : lora_alpha,
-                            "conv_dim"  : lora_conv_dim,
-                            "conv_alpha": lora_conv_alpha,
-                            "algo"      : lora_algo,
-                            "unit"      : lora_unit,
+                            "dim"       : metadata.ss_network_dim,
+                            "alpha"     : metadata.ss_network_alpha,
+                            "conv_dim"  : lora_args.conv_dim,
+                            "conv_alpha": lora_args.conv_alpha,
+                            "algo"      : lora_args.algo,
+                            "unit"      : lora_args.unit,
                         }
 
                         json_output_path = os.path.splitext(lora_path)[0] + '.json'
@@ -138,17 +151,14 @@ class Validator:
                             json.dump(data_dict, outfile, indent=4)
 
                         output_list = [f"{key}: {value}" for key, value in data_dict.items() if value is not None]
-                        
-                        del metadata
-                        return (True, f"LoRA Info: {output_list}")
-                    elif lora_d8ahazard is not None:
-                        del metadata
-                        return (False, "LoRA Info: LoRA is not trained using 'kohya-ss/sd-scripts' but using 'd8ahazard/sd_dreambooth_extension'")
+
+                        return True, f"LoRA Info: {output_list}"
+                    elif metadata.lora_key_encoding is not None:
+                        return False, "LoRA Info: LoRA is not trained using 'kohya-ss/sd-scripts' but using 'd8ahazard/sd_dreambooth_extension'"
                 else:
-                    del metadata
-                    return (True, "LoRA Info: No metadata saved")
+                    return True, "LoRA Info: No metadata saved"
             else:
-                return (True, "LoRA Info: No metadata saved, your model is not in safetensors format")
+                return True, "LoRA Info: No metadata saved, your model is not in safetensors format"
         except Exception as e:
             cprint(f"An error occurred: {str(e)}", color="green")
 

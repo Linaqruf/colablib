@@ -96,6 +96,39 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False, batc
 
     return message
 
+def reset_repo(directory, commit, hard=False, args="", quiet=False):
+    """
+    Resets a Git repository to a specific commit.
+    
+    Args:
+        directory (str)  : The directory of the repository.
+        commit    (str)  : The commit hash to reset to.
+        hard      (bool) : Whether to perform a hard reset. Defaults to False.
+        args      (str)  : Additional arguments for the reset command. Defaults to "".
+        quiet     (bool) : Whether to suppress the output. Defaults to False.
+    """
+    try:
+        cmd = ["git", "reset"]
+        if hard:
+            cmd.append("--hard")
+        cmd.append(commit)
+        if args:
+            cmd.extend(args.split())
+
+        result = subprocess.run(cmd, text=True, cwd=directory, capture_output=True)
+
+        if result.returncode == 0:
+            message = f"Reset successful. The HEAD is now at {commit}"
+        else:
+            message = f"Reset failed. Error: {result.stderr}"
+    except Exception as e:
+        message = f"An unexpected error occurred while resetting the repository: {str(e)}"
+
+    if not quiet:
+        color = "red" if "Failed" in message or "Error" in message else "green"
+        cprint(message, color=color)
+
+    return message
 
 def update_repo(fetch=False, pull=True, origin=None, cwd=None, args="", quiet=False, batch=False):
     """

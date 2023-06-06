@@ -2,8 +2,11 @@ import os
 import subprocess
 import glob
 import gdown
+import time
+from mega import Mega
 from pathlib import Path
-from ..utils.py_utils import get_filename
+from concurrent.futures import ThreadPoolExecutor
+from ..utils.py_utils import get_filename, calculate_elapsed_time
 from ..colored_print import cprint
 
 SUPPORTED_EXTENSIONS = (".ckpt", ".safetensors", ".pt", ".pth")
@@ -30,7 +33,7 @@ def parse_args(config):
 
     return args
 
-def aria2_download(download_dir, filename, url, quiet=False, user_header=None):
+def aria2_download(download_dir: str, filename: str , url: str, quiet: bool=False, user_header: str=None):
     """
     Downloads a file using the aria2 download manager.
 
@@ -41,7 +44,8 @@ def aria2_download(download_dir, filename, url, quiet=False, user_header=None):
         user_header     (str, optional) : Optional header to use for the download request. Defaults to None.
     """
     if not quiet:
-        cprint(f"Starting download of '{filename}'...", color="green")
+        start_time = time.time()
+        cprint(f"Starting download from '{filename}' with aria2c...", color="green")
 
     aria2_config = {
         "console-log-level"         : "error",
@@ -57,11 +61,12 @@ def aria2_download(download_dir, filename, url, quiet=False, user_header=None):
     }
     aria2_args = parse_args(aria2_config)
     subprocess.run(["aria2c", *aria2_args])
-
+    
     if not quiet:
-        cprint(f"Download of '{filename}' completed.", color="green")
+        elapsed_time = calculate_elapsed_time(start_time)
+        cprint(f"Download '{filename}' completed. Took {elapsed_time}.", color="green")
 
-def gdown_download(url, dst, quiet=False):
+def gdown_download(url: str, dst: str, quiet: bool=False):
     """
     Downloads a file from a Google Drive URL using gdown.
 
@@ -73,7 +78,8 @@ def gdown_download(url, dst, quiet=False):
         The output of the gdown download function.
     """
     if not quiet:
-        cprint(f"Starting download from {url}...", color="green")
+        start_time = time.time()
+        cprint(f"Starting download with gdown...", color="green")
 
     options = {
         "uc?id"         : {},
@@ -91,11 +97,34 @@ def gdown_download(url, dst, quiet=False):
     output = gdown.download_folder(url, quiet=True, use_cookies=False)
 
     if not quiet:
-        cprint(f"Download completed.", color="green")
+        elapsed_time = calculate_elapsed_time(start_time)
+        cprint(f"Download completed. Took {elapsed_time}.", color="green")
 
     return output
 
-def get_modelname(url, quiet=False):
+def mega_download(url: str, dst: str, quiet: bool=False):
+    """
+    Downloads a file from a MEGA URL.
+
+    Args:
+        url (str): The URL of the file on MEGA.
+        dst (str): The directory to download the file to.
+    """
+    if not quiet:
+        start_time = time.time()
+        cprint(f"Starting download with mega.py...", color="green")
+
+    mega = Mega()
+    m = mega.login()  # add login credentials if needed
+    file = m.download_url(url, dst)
+    
+    if not quiet:
+        elapsed_time = calculate_elapsed_time(start_time)
+        cprint(f"Download completed. Took {elapsed_time}.", color="green")
+
+    return file
+
+def get_modelname(url: str, quiet: bool=False) -> None:
     """
     Retrieves the model name from a given URL.
 
@@ -106,7 +135,7 @@ def get_modelname(url, quiet=False):
     Returns:
         str or None: The filename of the model file if it ends with a supported extension, otherwise None.
     """
-    filename = os.path.basename(url) if url.startswith("/content/drive/MyDrive/") or url.endswith(SUPPORTED_EXTENSIONS) else get_filename(url)
+    filename = os.path.basename(url) if "drive/MyDrive" in url or url.endswith(SUPPORTED_EXTENSIONS) else get_filename(url)
 
     if filename.endswith(SUPPORTED_EXTENSIONS):
         if not quiet:
@@ -115,9 +144,10 @@ def get_modelname(url, quiet=False):
 
     if not quiet:
         cprint(f"Failed to obtain filename.", color="green")
+
     return None
 
-def download(url, dst, user_header=None, quiet=False):
+def download(url: str, dst: str, user_header: str=None, quiet: bool=False):
     """
     Downloads a file from a given URL to a destination directory.
 
@@ -130,18 +160,38 @@ def download(url, dst, user_header=None, quiet=False):
 
     if "drive.google.com" in url:
         gdown_download(url, dst, quiet=quiet)
-    elif url.startswith("/content/drive/MyDrive/"):
+    elif "drive/MyDrive" in url:
         if not quiet:
+            start_time = time.time()
             cprint(f"Copying file '{filename}'...", color="green")
         Path(os.path.join(dst, filename)).write_bytes(Path(url).read_bytes())
         if not quiet:
-            cprint(f"Copying completed.", color="green")
+            elapsed_time = calculate_elapsed_time(start_time)
+            cprint(f"Copying completed. Took {elapsed_time}.", color="green")
     else:
         if "huggingface.co" in url:
             url = url.replace("/blob/", "/resolve/")
         aria2_download(dst, filename, url, user_header=user_header, quiet=quiet)
 
-def get_most_recent_file(directory, quiet=False):
+def batch_download(urls: list, dst: str, user_header: str = None, quiet: bool = False) -> None:
+    """
+    Downloads multiple files from a list of URLs.
+
+    Args:
+        urls: A list of URLs from which to download files.
+        dst: The directory to download the files to.
+        user_header: Optional header to use for the download request. Defaults to None.
+        quiet: If True, suppresses output. Defaults to False.
+    """
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(download, url, dst, user_header, quiet) for url in urls]
+        for future in futures:
+            try:
+                future.result()
+            except Exception as e:
+                    cprint(f"Failed to download file with error: {str(e)}", color="red")
+
+def get_most_recent_file(directory: str, quiet: bool=False):
     """
     Gets the most recent file in a given directory.
 
@@ -168,7 +218,7 @@ def get_most_recent_file(directory, quiet=False):
 
     return most_recent_file
 
-def get_filepath(url, dst, quiet=False):
+def get_filepath(url: str, dst: str, quiet: bool=False):
     """
     Returns the filepath of the model for a given URL and destination directory.
 
