@@ -45,7 +45,7 @@ def aria2_download(download_dir: str, filename: str , url: str, quiet: bool=Fals
     """
     if not quiet:
         start_time = time.time()
-        cprint(f"Starting download from '{filename}' with aria2c...", color="green")
+        cprint(f"Starting download of '{filename}' with aria2c...", color="green")
 
     aria2_config = {
         "console-log-level"         : "error",
@@ -156,7 +156,7 @@ def download(url: str, dst: str, user_header: str=None, quiet: bool=False):
         dst         (str)           : The directory to download the file to.
         user_header (str, optional) : Optional header to use for the download request. Defaults to None.
     """
-    filename = get_modelname(url, quiet=False)
+    filename = get_modelname(url, quiet=quiet)
 
     if "drive.google.com" in url:
         gdown_download(url, dst, quiet=quiet)
@@ -229,7 +229,7 @@ def get_filepath(url: str, dst: str, quiet: bool=False):
     Returns:
         str         : The filepath of the model.
     """
-    filename = get_modelname(url, quiet=quiet)
+    filename = get_modelname(url, quiet=True)
 
     if not filename or not filename.endswith(SUPPORTED_EXTENSIONS):
         most_recent_file = get_most_recent_file(dst, quiet=quiet)
