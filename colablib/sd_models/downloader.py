@@ -187,7 +187,7 @@ def batch_download(urls: list, dst: str, desc: str = None, user_header: str = No
     """
     if desc is None:
         desc = "Downloading..." 
-        
+
     with ThreadPoolExecutor() as executor:
         futures = [executor.submit(download, url, dst, user_header=user_header, quiet=quiet) for url in urls]
         with tqdm(total=len(futures), unit='file', disable=quiet, desc=cprint(desc, color="green", tqdm_desc=True)) as pbar:
@@ -196,25 +196,6 @@ def batch_download(urls: list, dst: str, desc: str = None, user_header: str = No
                     future.result()
                     pbar.update(1)
                 except Exception as e:
-                    cprint(f"Failed to download file with error: {str(e)}", color="red")
-
-
-def batch_download(urls: list, dst: str, user_header: str = None, quiet: bool = False) -> None:
-    """
-    Downloads multiple files from a list of URLs.
-
-    Args:
-        urls: A list of URLs from which to download files.
-        dst: The directory to download the files to.
-        user_header: Optional header to use for the download request. Defaults to None.
-        quiet: If True, suppresses output. Defaults to False.
-    """
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(download, url, dst, user_header, quiet) for url in urls]
-        for future in futures:
-            try:
-                future.result()
-            except Exception as e:
                     cprint(f"Failed to download file with error: {str(e)}", color="red")
 
 def get_most_recent_file(directory: str, quiet: bool=False):
