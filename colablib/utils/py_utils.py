@@ -45,17 +45,23 @@ def calculate_elapsed_time(start_time):
         mins, secs = divmod(elapsed_time, 60)
         return f"{mins} mins {secs} sec"
     
-def get_filename(url):
+def get_filename(url, user_header=None):
     """
     Extracts the filename from the given URL.
 
     Args:
         url (str): The URL to extract the filename from.
+        user_header (str, optional): The user header. Defaults to None.
 
     Returns:
         str: The filename.
     """
-    response = requests.get(url, stream=True)
+    headers = {}
+
+    if user_header:
+        headers['User-Agent'] = user_header
+
+    response = requests.get(url, stream=True, headers=headers)
     response.raise_for_status()
 
     if 'content-disposition' in response.headers:
