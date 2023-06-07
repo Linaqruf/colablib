@@ -59,7 +59,7 @@ def get_filename(url, user_header=None):
     headers = {}
 
     if user_header:
-        headers['User-Agent'] = user_header
+        headers['Authorization'] = user_header
 
     response = requests.get(url, stream=True, headers=headers)
     response.raise_for_status()

@@ -189,7 +189,7 @@ def batch_download(urls: list, dst: str, desc: str = None, user_header: str = No
         desc = "Downloading..." 
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(download, url, dst, user_header=user_header, quiet=quiet) for url in urls]
+        futures = [executor.submit(download, url, dst, user_header=user_header, quiet=True) for url in urls]
         with tqdm(total=len(futures), unit='file', disable=quiet, desc=cprint(desc, color="green", tqdm_desc=True)) as pbar:
             for future in as_completed(futures):
                 try:
