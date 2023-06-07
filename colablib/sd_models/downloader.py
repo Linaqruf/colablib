@@ -4,8 +4,9 @@ import glob
 import gdown
 import time
 from mega import Mega
+from tqdm import tqdm
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..utils.py_utils import get_filename, calculate_elapsed_time
 from ..colored_print import cprint
 
@@ -147,7 +148,7 @@ def get_modelname(url: str, quiet: bool=False) -> None:
 
     return None
 
-def download(url: str, dst: str, user_header: str=None, quiet: bool=False):
+def download(url: str, dst: str, filename:str= None, user_header: str=None, quiet: bool=False):
     """
     Downloads a file from a given URL to a destination directory.
 
@@ -156,7 +157,8 @@ def download(url: str, dst: str, user_header: str=None, quiet: bool=False):
         dst         (str)           : The directory to download the file to.
         user_header (str, optional) : Optional header to use for the download request. Defaults to None.
     """
-    filename = get_modelname(url, quiet=quiet)
+    if not filename:
+        filename = get_modelname(url, quiet=quiet)
 
     if "drive.google.com" in url:
         gdown_download(url, dst, quiet=quiet)
@@ -172,6 +174,30 @@ def download(url: str, dst: str, user_header: str=None, quiet: bool=False):
         if "huggingface.co" in url:
             url = url.replace("/blob/", "/resolve/")
         aria2_download(dst, filename, url, user_header=user_header, quiet=quiet)
+
+def batch_download(urls: list, dst: str, desc: str = None, user_header: str = None, quiet: bool = False) -> None:
+    """
+    Downloads multiple files from a list of URLs.
+
+    Args:
+        urls: A list of URLs from which to download files.
+        dst: The directory to download the files to.
+        user_header: Optional header to use for the download request. Defaults to None.
+        quiet: If True, suppresses output. Defaults to False.
+    """
+    if desc is None:
+        desc = "Downloading..." 
+        
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(download, url, dst, user_header=user_header, quiet=quiet) for url in urls]
+        with tqdm(total=len(futures), unit='file', disable=quiet, desc=cprint(desc, color="green", tqdm_desc=True)) as pbar:
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                    pbar.update(1)
+                except Exception as e:
+                    cprint(f"Failed to download file with error: {str(e)}", color="red")
+
 
 def batch_download(urls: list, dst: str, user_header: str = None, quiet: bool = False) -> None:
     """
