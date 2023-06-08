@@ -2,9 +2,6 @@ import os
 import zipfile
 import requests
 import shutil
-import subprocess
-import io
-from contextlib import redirect_stdout
 from .py_utils import get_filename
 from tqdm import tqdm
 from ..colored_print import cprint
@@ -63,14 +60,13 @@ def unionfuse(fused_dir: str, source_dir: str, destination_dir: str):
 
         command = f"unionfs-fuse {destination_dir}=RW:{source_dir}=RW {fused_dir}"
         
-        with io.StringIO() as buf, redirect_stdout(buf):
-            subprocess.run(command, shell=True, check=True, text=True)
-            output = buf.getvalue()
+        result = os.system(command)
         
-        if "fuse: mountpoint is not empty" in output:
-            cprint(f"Folder is not empty and can't be fused, skipping...", color='yellow')
+        if result != 0:
+            cprint(f"An error occurred while fusing the folders. Command exited with status: {result}", color='red')
+            raise Exception("Union Fuse operation failed")
         else:
-            cprint(f"Folder fused successfully!", color='green')
+            cprint("Folder fused successfully!", color='green')
     except Exception as e:
-        cprint(f"An error occurred while fusing the folders: {e}", color='flat_red')
+        cprint(f"An error occurred while fusing the folders: {e}", color='red')
         raise e
