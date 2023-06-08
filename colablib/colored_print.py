@@ -86,3 +86,20 @@ def cprint(*args, color="default", style="normal", bg_color=None, reset=True, ti
         return color_start + formatted_text
     else:
         print(color_start + formatted_text + color_end)
+
+def print_line(length, color="default", style="normal", bg_color=None, reset=True):
+    """
+    Prints a line of equal signs.
+
+    Args:
+        length: The length of the line.
+        color: Text color. Default is "default".
+        style: Text style. Default is "normal".
+        bg_color: Background color. Default is None.
+        reset: Whether to reset color after printing. Default is True.
+
+    Returns:
+        None
+    """
+    line = "=" * length
+    cprint(line, color=color, style=style, bg_color=bg_color, reset=reset)

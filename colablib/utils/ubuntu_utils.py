@@ -2,6 +2,9 @@ import os
 import zipfile
 import requests
 import shutil
+import subprocess
+import io
+from contextlib import redirect_stdout
 from .py_utils import get_filename
 from tqdm import tqdm
 from ..colored_print import cprint
@@ -42,3 +45,32 @@ def ubuntu_deps(url, dst, desc=None):
         deb_file = os.path.join(dst, filename)
         os.system(f'dpkg -i {deb_file}')
 
+def unionfuse(fused_dir: str, source_dir: str, destination_dir: str):
+    """
+    Performs union fuse operation on the given folder path.
+
+    Args:
+        source_dir (str): Path of the source folder.
+        destination_dir (str): Path of the destination folder.
+        fused_dir (str): Path of the fused folder.
+
+    Raises:
+        Exception: If any error occurs during union fuse operation.
+    """
+    try:
+        for directory in [source_dir, fused_dir, destination_dir]:
+            os.makedirs(directory, exist_ok=True)
+
+        command = f"unionfs-fuse {destination_dir}=RW:'{source_dir}'=RW {fused_dir}"
+        
+        with io.StringIO() as buf, redirect_stdout(buf):
+            subprocess.run(command, shell=True, check=True, text=True)
+            output = buf.getvalue()
+        
+        if "fuse: mountpoint is not empty" in output:
+            cprint(f"Folder is not empty and can't be fused, skipping...", color='yellow')
+        else:
+            cprint(f"Folder fused successfully!", color='green')
+    except Exception as e:
+        cprint(f"An error occurred while fusing the folders: {e}", color='flat_red')
+        raise e

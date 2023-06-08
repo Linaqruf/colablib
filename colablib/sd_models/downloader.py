@@ -125,7 +125,7 @@ def mega_download(url: str, dst: str, quiet: bool=False):
 
     return file
 
-def get_modelname(url: str, quiet: bool=False) -> None:
+def get_modelname(url: str, quiet: bool=False, user_header: str=None) -> None:
     """
     Retrieves the model name from a given URL.
 
@@ -136,7 +136,7 @@ def get_modelname(url: str, quiet: bool=False) -> None:
     Returns:
         str or None: The filename of the model file if it ends with a supported extension, otherwise None.
     """
-    filename = os.path.basename(url) if "drive/MyDrive" in url or url.endswith(SUPPORTED_EXTENSIONS) else get_filename(url)
+    filename = os.path.basename(url) if "drive/MyDrive" in url or url.endswith(SUPPORTED_EXTENSIONS) else get_filename(url, user_header=user_header)
 
     if filename.endswith(SUPPORTED_EXTENSIONS):
         if not quiet:
