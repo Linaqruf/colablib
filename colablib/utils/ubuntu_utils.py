@@ -58,7 +58,7 @@ def unionfuse(fused_dir: str, source_dir: str, destination_dir: str):
         for directory in [source_dir, fused_dir, destination_dir]:
             os.makedirs(directory, exist_ok=True)
 
-        command = f"unionfs-fuse {destination_dir}=RW:{source_dir}=RW {fused_dir}"
+        command = f"unionfs-fuse {destination_dir}=RW:\"{source_dir}\"=RW {fused_dir}"
         
         result = os.system(command)
         
