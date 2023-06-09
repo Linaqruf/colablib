@@ -63,10 +63,10 @@ def unionfuse(fused_dir: str, source_dir: str, destination_dir: str):
         result = os.system(command)
         
         if result != 0:
-            cprint(f"An error occurred while fusing the folders. Command exited with status: {result}", color='red')
+            cprint(f"An error occurred while fusing the folders. Command exited with status: {result}", color="flat_red")
             raise Exception("Union Fuse operation failed")
         else:
             cprint("Folder fused successfully!", color='green')
     except Exception as e:
-        cprint(f"An error occurred while fusing the folders: {e}", color='red')
+        cprint(f"An error occurred while fusing the folders: {e}", color="flat_red")
         raise e

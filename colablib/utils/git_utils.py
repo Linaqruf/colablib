@@ -147,7 +147,7 @@ def patch_repo(url, dir, cwd, args=None, whitespace_fix=False):
     try:
         return subprocess.run(cmd, cwd=cwd, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error applying patch. Error: {str(e)}")
+        cprint(f"Error applying patch. Error: {str(e)}", color="flat_red")
 
 def reset_repo(directory, commit, hard=False, args="", quiet=False):
     """
@@ -263,7 +263,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
             try:
                 results[future] = future.result()
             except Exception as e:
-                cprint(f"Error while cloning a repository: {e}", color="red")
+                cprint(f"Error while cloning a repository: {e}", color="flat_red")
                 return None
             
     if not quiet:
@@ -305,7 +305,7 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
             try:
                 results[future] = future.result()  # Store update status message
             except Exception as e:
-                cprint(f"Error while updating a repository: {e}", color="red")
+                cprint(f"Error while updating a repository: {e}", color="flat_red")
                 return None
 
     if not quiet:

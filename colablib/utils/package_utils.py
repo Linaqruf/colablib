@@ -31,18 +31,18 @@ def extract_package(package_name, target_directory, overwrite=False):
         try:
             subprocess.check_output(tar_args, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            cprint(f"Package extraction failed with error: {e.output.decode()}", color="yellow")
+            cprint(f"Package extraction failed with error: {e.output.decode()}", color="flat_red")
     elif package_name.endswith(".zip"):
         try:
             with zipfile.ZipFile(package_name, 'r') as zip_ref:
                 zip_ref.extractall(target_directory)
         except Exception as e:
-            cprint(f"Package extraction failed with error: {str(e)}", color="yellow")
+            cprint(f"Package extraction failed with error: {str(e)}", color="flat_red")
     elif package_name.endswith(".rar"):
         try:
             with rarfile.RarFile(package_name, 'r') as rar_ref:
                 rar_ref.extractall(target_directory)
         except Exception as e:
-            cprint(f"Package extraction failed with error: {str(e)}", color="yellow")
+            cprint(f"Package extraction failed with error: {str(e)}", color="flat_red")
     else:
-        cprint(f"Package type not supported: {package_name}", color="yellow")
+        cprint(f"Package type not supported: {package_name}", color="flat_red")

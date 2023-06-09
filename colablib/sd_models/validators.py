@@ -119,7 +119,7 @@ class Validator:
                     try:
                         metadata = Metadata(**raw_metadata)
                     except ValidationError as e:
-                        cprint(f"Metadata validation error: {e}", color="green")
+                        cprint(f"Metadata validation error: {e}", color="flat_red")
                         return False, "Invalid metadata"
 
                     lora_args_dict = json.loads(metadata.ss_network_args) if metadata.ss_network_args else {}
@@ -127,7 +127,7 @@ class Validator:
                     try:
                         lora_args = LoraArgs(**lora_args_dict)
                     except ValidationError as e:
-                        cprint(f"Lora args validation error: {e}", color="green")
+                        cprint(f"Lora args validation error: {e}", color="flat_red")
                         return False, "Invalid lora args"
 
                     lora_type = Validator.validate_kohya_lora(
@@ -160,7 +160,7 @@ class Validator:
             else:
                 return True, "LoRA Info: No metadata saved, your model is not in safetensors format"
         except Exception as e:
-            cprint(f"An error occurred: {str(e)}", color="green")
+            cprint(f"An error occurred: {str(e)}", color="flat_red")
 
     @staticmethod
     def validate_kohya_lora(lora_module, lora_algo, lora_conv_dim, lora_conv_alpha):

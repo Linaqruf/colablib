@@ -93,7 +93,7 @@ def get_torch_version():
         import torch
         return torch.__version__
     except ImportError:
-        cprint("Failed to retrieve PyTorch version: PyTorch is not installed.", color="red")
+        cprint("Failed to retrieve PyTorch version: PyTorch is not installed.", color="flat_red")
         return None
 
 def get_gpu_info(get_gpu_name=False):

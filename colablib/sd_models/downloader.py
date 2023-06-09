@@ -65,7 +65,7 @@ def aria2_download(download_dir: str, filename: str , url: str, quiet: bool=Fals
     
     if not quiet:
         elapsed_time = calculate_elapsed_time(start_time)
-        cprint(f"Download '{filename}' completed. Took {elapsed_time}.", color="green")
+        cprint(f"Download of '{filename}' completed. Took {elapsed_time}.", color="green")
 
 def gdown_download(url: str, dst: str, quiet: bool=False):
     """
@@ -91,7 +91,9 @@ def gdown_download(url: str, dst: str, quiet: bool=False):
     for key, kwargs in options.items():
         if key in url:
             output = gdown.download(url, os.path.join(dst, ""), quiet=True, **kwargs)
-            cprint(f"Download completed.", color="green")
+            if not quiet:
+                elapsed_time = calculate_elapsed_time(start_time)
+                cprint(f"Download completed. Took {elapsed_time}.", color="green")
             return output
 
     os.chdir(dst)
@@ -144,7 +146,7 @@ def get_modelname(url: str, quiet: bool=False, user_header: str=None) -> None:
         return filename
 
     if not quiet:
-        cprint(f"Failed to obtain filename.", color="green")
+        cprint(f"Failed to obtain filename.", color="yellow")
 
     return None
 
@@ -196,7 +198,7 @@ def batch_download(urls: list, dst: str, desc: str = None, user_header: str = No
                     future.result()
                     pbar.update(1)
                 except Exception as e:
-                    cprint(f"Failed to download file with error: {str(e)}", color="red")
+                    cprint(f"Failed to download file with error: {str(e)}", color="flat_red")
 
 def get_most_recent_file(directory: str, quiet: bool=False):
     """
@@ -213,7 +215,7 @@ def get_most_recent_file(directory: str, quiet: bool=False):
     files = glob.glob(os.path.join(directory, "*"))
     if not files:
         if not quiet:
-            cprint("No files found in directory.", color="green")
+            cprint("No files found in directory.", color="yellow")
         return None
 
     most_recent_file = max(files, key=os.path.getmtime)
