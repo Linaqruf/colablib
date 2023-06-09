@@ -4,6 +4,7 @@ import concurrent.futures
 from tqdm import tqdm
 from urllib.parse import urlparse
 from ..colored_print import cprint
+from ..sd_models.downloader import aria2_download
 
 def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False, quiet=False, batch=False):
     """
@@ -95,6 +96,58 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False, batc
         cprint(message, color=color)
 
     return message
+
+def patch_repo(url, dir, cwd, args=None, whitespace_fix=False):
+    """
+    Function to patch a repo with specified arguments.
+    
+    Args:
+        url (str): URL of the repo.
+        dir (str): Directory to download the repo.
+        cwd (str): Current working directory.
+        args (list, optional): List of arguments for the 'git apply' command.
+        whitespace_fix (bool, optional): Whether to apply the '--whitespace=fix' argument.
+        
+    Returns:
+        CompletedProcess: Completed process.
+    """
+    
+    # Check if url, dir and cwd are strings
+    if not isinstance(url, str) or not isinstance(dir, str) or not isinstance(cwd, str):
+        raise ValueError("'url', 'dir' and 'cwd' must be strings")
+    
+    # Check if args is a list or None
+    if args is not None and not isinstance(args, list):
+        raise ValueError("'args' must be a list of strings or None")
+
+    # Check if whitespace_fix is a boolean
+    if not isinstance(whitespace_fix, bool):
+        raise ValueError("'whitespace_fix' must be a boolean")
+    
+    os.makedirs(dir, exist_ok=True)
+
+    filename = ""
+    if "github.com" in url:
+        filename = urlparse(url).path.split('/')[-1].replace('.git', '')
+        try:
+            aria2_download(download_dir=dir, filename=filename, url=url)
+        except Exception as e:
+            print(f"Error downloading from {url}. Error: {str(e)}")
+            return
+    else:
+        filename = os.path.basename(url)
+        
+    cmd = ['git', 'apply']
+    if whitespace_fix:
+        cmd.append('--whitespace=fix')
+    if args:
+        cmd.extend(args)
+    cmd.append(os.path.join(dir, filename))
+    
+    try:
+        return subprocess.run(cmd, cwd=cwd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error applying patch. Error: {str(e)}")
 
 def reset_repo(directory, commit, hard=False, args="", quiet=False):
     """
