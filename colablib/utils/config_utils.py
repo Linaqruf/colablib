@@ -13,15 +13,13 @@ def determine_file_format(filename):
         filename (str): The filename.
 
     Returns:
-        str: The file format (json, yaml, xml, toml, or txt).
+        str: The file format (json, yaml, xml, toml, txt, or css).
     """
     file_extension = filename.lower().split(".")[-1]
     if file_extension in ("json", "yaml", "yml", "xml", "toml", "txt"):
         return file_extension
     else:
-        cprint("Unknown file format. Assuming TXT.", color="green")
         return "txt"
-
 
 def read_config(filename):
     """
