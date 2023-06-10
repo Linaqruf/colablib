@@ -276,7 +276,6 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
                 return None
             
     if not quiet:
-        cprint()
         for future, message in results.items():
             if message:
                 if "already exists" in message.lower():
@@ -285,7 +284,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
                     color = "green"
                 else:
                     color = "red"
-                cprint(" [-] ", message, color=color)
+                cprint(" [-]", message, color=color)
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=False, desc=None):
     """
@@ -318,7 +317,6 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
                 return None
 
     if not quiet:
-        cprint()
         for future, message in results.items():
             if message:
                 if not any(item.lower() in message.lower() for item in ["failed", "error"]):
@@ -328,7 +326,7 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
                         color = "yellow"
                     else:
                         color = "red"
-                cprint(" [-] ", message, color=color)
+                cprint(f" [-]", message, color=color)
 
 def validate_repo(directory):
     """
