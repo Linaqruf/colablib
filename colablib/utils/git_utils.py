@@ -97,7 +97,7 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False, batc
 
     return message
 
-def patch_repo(url, dir, cwd, args=None, whitespace_fix=False):
+def patch_repo(url, dir, cwd, path=None, args=None, whitespace_fix=False):
     """
     Function to patch a repo with specified arguments.
     
@@ -127,7 +127,8 @@ def patch_repo(url, dir, cwd, args=None, whitespace_fix=False):
     os.makedirs(dir, exist_ok=True)
 
     filename = ""
-    if "github.com" in url:
+    
+    if url:
         filename = urlparse(url).path.split('/')[-1].replace('.git', '')
         try:
             response = requests.get(url, stream=True)
@@ -139,15 +140,18 @@ def patch_repo(url, dir, cwd, args=None, whitespace_fix=False):
         except Exception as e:
             print(f"Error downloading from {url}. Error: {str(e)}")
             return
-    else:
+    elif path:
         filename = os.path.basename(url)
-        
+    
+    if not path:
+        path = os.path.join(dir, filename)
+
     cmd = ['git', 'apply']
     if whitespace_fix:
         cmd.append('--whitespace=fix')
     if args:
         cmd.extend(args)
-    cmd.append(os.path.join(dir, filename))
+    cmd.append(path)
     
     try:
         return subprocess.run(cmd, cwd=cwd, check=True)
