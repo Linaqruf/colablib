@@ -1,10 +1,10 @@
 import subprocess
 import os
+import requests
 import concurrent.futures
 from tqdm import tqdm
 from urllib.parse import urlparse
 from ..colored_print import cprint
-from ..sd_models.downloader import aria2_download
 
 def clone_repo(url, cwd=None, directory=None, branch=None, commit_hash=None, recursive=False, quiet=False, batch=False):
     """
@@ -130,7 +130,12 @@ def patch_repo(url, dir, cwd, args=None, whitespace_fix=False):
     if "github.com" in url:
         filename = urlparse(url).path.split('/')[-1].replace('.git', '')
         try:
-            aria2_download(download_dir=dir, filename=filename, url=url)
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            
+            with open(os.path.join(dir, filename), 'wb') as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
         except Exception as e:
             print(f"Error downloading from {url}. Error: {str(e)}")
             return
