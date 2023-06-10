@@ -287,6 +287,7 @@ def batch_clone(urls, desc=None, cwd=None, directory=None, branch=None, commit_h
                 else:
                     color = "red"
                 cprint(" [-]", message, color=color)
+        cprint()
 
 def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", quiet=False, desc=None):
     """
@@ -329,6 +330,7 @@ def batch_update(fetch=False, pull=True, origin=None, directory=None, args="", q
                     else:
                         color = "red"
                 cprint(f" [-]", message, color=color)
+        cprint()
 
 def validate_repo(directory):
     """
