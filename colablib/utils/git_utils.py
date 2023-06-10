@@ -97,7 +97,7 @@ def checkout_repo(directory, reference, create=False, args="", quiet=False, batc
 
     return message
 
-def patch_repo(url, dir, cwd, path=None, args=None, whitespace_fix=False):
+def patch_repo(url, dir, cwd, path=None, args=None, whitespace_fix=False, quiet=False):
     """
     Function to patch a repo with specified arguments.
     
@@ -138,7 +138,8 @@ def patch_repo(url, dir, cwd, path=None, args=None, whitespace_fix=False):
                 for chunk in response.iter_content(chunk_size=8192):
                     file.write(chunk)
         except Exception as e:
-            print(f"Error downloading from {url}. Error: {str(e)}")
+            if not quiet:
+                print(f"Error downloading from {url}. Error: {str(e)}")
             return
     elif path:
         filename = os.path.basename(url)
@@ -156,7 +157,8 @@ def patch_repo(url, dir, cwd, path=None, args=None, whitespace_fix=False):
     try:
         return subprocess.run(cmd, cwd=cwd, check=True)
     except subprocess.CalledProcessError as e:
-        cprint(f"Error applying patch. Error: {str(e)}", color="flat_red")
+        if not quiet:
+            cprint(f"Error applying patch. Error: {str(e)}", color="flat_red")
 
 def reset_repo(directory, commit, hard=False, args="", quiet=False):
     """
