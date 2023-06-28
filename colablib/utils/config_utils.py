@@ -2,6 +2,7 @@ import json
 import yaml
 import xmltodict
 import toml
+import requests
 import fileinput
 from ..colored_print import cprint
 
@@ -92,3 +93,15 @@ def change_line(filename, old_string, new_string):
     with fileinput.input(files=(filename,), inplace=True) as file:
         for line in file:
             print(line.replace(old_string, new_string), end='')
+
+def pastebin_reader(id):
+    if "pastebin.com" in id:
+        url = id 
+        if 'raw' not in url:
+                url = url.replace('pastebin.com', 'pastebin.com/raw')
+    else:
+        url = "https://pastebin.com/raw/" + id
+    response = requests.get(url)
+    response.raise_for_status() 
+    lines = response.text.split('\n')
+    return lines
