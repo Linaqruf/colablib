@@ -1,4 +1,5 @@
 import os
+import math
 import re
 import requests
 import subprocess
@@ -124,3 +125,38 @@ def get_gpu_info(get_gpu_name=False):
             raise RuntimeError("No GPU found. Unassigned GPU in Google Colab.")
         else:
             raise RuntimeError(f"Command execution failed with error: {error_message}")
+
+def convert_size(size_bytes: int) -> str:
+    """
+    Convert the given size in bytes to a more readable format.
+
+    Args:
+        size_bytes (int): The size in bytes.
+
+    Returns:
+        str: The size in a more readable format (KB, MB, GB, etc.).
+    """
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return f"{s} {size_name[i]}"
+
+def get_file_size(zip_path: str) -> str:
+    """
+    Get the size of the file at the given path.
+
+    Args:
+        zip_path (str): The path to the file.
+
+    Returns:
+        str: The size of the file in a more readable format (KB, MB, GB, etc.).
+    """
+    if not os.path.isfile(zip_path):
+        raise ValueError(f"'{zip_path}' is not a valid file path.")
+
+    initial_size = os.path.getsize(zip_path)
+    return convert_size(initial_size)
+
