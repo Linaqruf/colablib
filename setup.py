@@ -5,7 +5,7 @@ setup(
     version='0.1.8',
     packages=find_packages(),
     install_requires=[
-        'safetensors==0.2.6',
+        'safetensors==0.3.1',
         'requests==2.27.1',
         'tqdm==4.65.0',
         'PyYAML==6.0',
@@ -14,7 +14,7 @@ setup(
         'rarfile==4.0',
         'xmltodict==0.13.0',
         'mega.py==1.0.8',
-        'pydantic==1.10.8'
+        'pydantic==1.10.9'
     ],
     author='Furqanil Taqwa',
     author_email='furqanil.taqwa@gmail.com',
