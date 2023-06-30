@@ -3,7 +3,7 @@ import subprocess
 import glob
 import gdown
 import time
-from mega import Mega
+# from mega import Mega
 from tqdm import tqdm
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -105,27 +105,27 @@ def gdown_download(url: str, dst: str, quiet: bool=False):
 
     return output
 
-def mega_download(url: str, dst: str, quiet: bool=False):
-    """
-    Downloads a file from a MEGA URL.
+# def mega_download(url: str, dst: str, quiet: bool=False):
+#     """
+#     Downloads a file from a MEGA URL.
 
-    Args:
-        url (str): The URL of the file on MEGA.
-        dst (str): The directory to download the file to.
-    """
-    if not quiet:
-        start_time = time.time()
-        cprint(f"Starting download with mega.py...", color="green")
+#     Args:
+#         url (str): The URL of the file on MEGA.
+#         dst (str): The directory to download the file to.
+#     """
+#     if not quiet:
+#         start_time = time.time()
+#         cprint(f"Starting download with mega.py...", color="green")
 
-    mega = Mega()
-    m = mega.login()  # add login credentials if needed
-    file = m.download_url(url, dst)
+#     mega = Mega()
+#     m = mega.login()  # add login credentials if needed
+#     file = m.download_url(url, dst)
     
-    if not quiet:
-        elapsed_time = calculate_elapsed_time(start_time)
-        cprint(f"Download completed. Took {elapsed_time}.", color="green")
+#     if not quiet:
+#         elapsed_time = calculate_elapsed_time(start_time)
+#         cprint(f"Download completed. Took {elapsed_time}.", color="green")
 
-    return file
+#     return file
 
 def get_modelname(url: str, quiet: bool=False, user_header: str=None) -> None:
     """
