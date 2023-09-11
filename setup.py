@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'safetensors==0.3.1',
-        'requests==2.27.1',
+        'requests==2.31.0',
         'tqdm==4.65.0',
         'PyYAML==6.0',
         'gdown==4.7.1',
