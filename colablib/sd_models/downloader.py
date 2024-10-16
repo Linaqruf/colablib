@@ -38,7 +38,7 @@ class DownloadConfig(BaseModel):
         """
         headers = self.headers.copy()
         if "huggingface.co" in url and self.token and self.token.startswith("hf_"):
-            headers["Authorization"] = f"Bearer {self.token}"
+            headers["Authorization"] = f"Bearer '{self.token}'"
         return headers
 
     def get_url(self, url: str) -> str:
