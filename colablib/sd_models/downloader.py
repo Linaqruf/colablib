@@ -3,27 +3,82 @@ import subprocess
 import glob
 import gdown
 import time
-# from mega import Mega
 from tqdm import tqdm
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, Optional, List
+from pydantic import BaseModel, Field
+from urllib.parse import urlparse
+
 from ..utils.py_utils import get_filename, calculate_elapsed_time
 from ..colored_print import cprint
 
 SUPPORTED_EXTENSIONS = (".ckpt", ".safetensors", ".pt", ".pth")
 
-def parse_args(config):
+class DownloadConfig(BaseModel):
     """
-    Converts a dictionary of arguments into a list for command line usage.
+    Configuration class for download operations.
+
+    Attributes:
+        token (Optional[str]): API token for authentication.
+        headers (Dict[str, str]): Additional headers for the download request.
+    """
+    token: Optional[str] = Field(None, description="API token for authentication")
+    headers: Dict[str, str] = Field(default_factory=dict, description="Additional headers")
+
+    def get_headers(self, url: str) -> Dict[str, str]:
+        """
+        Get headers for the given URL, including authentication if necessary.
+
+        Args:
+            url (str): The URL for which to generate headers.
+
+        Returns:
+            Dict[str, str]: Headers to use for the download request.
+        """
+        headers = self.headers.copy()
+        if "huggingface.co" in url and self.token and self.token.startswith("hf_"):
+            headers["Authorization"] = f"Bearer {self.token}"
+        return headers
+
+    def get_url(self, url: str) -> str:
+        """
+        Process the URL, adding authentication tokens if necessary.
+
+        Args:
+            url (str): The original URL.
+
+        Returns:
+            str: The processed URL with authentication added if needed.
+
+        Raises:
+            ValueError: If a token is required but not provided for certain URLs.
+        """
+        parsed_url = urlparse(url)
+        
+        if parsed_url.netloc == "huggingface.co":
+            return url.replace("/blob/", "/resolve/").replace("?download=true", "") 
+        elif parsed_url.netloc == "civitai.com":
+            if not self.token:
+                raise ValueError("A token is required for downloading from civitai.")
+            query = f"ApiKey={self.token}"
+            if parsed_url.query:
+                return f"{url}&{query}"
+            else:
+                return f"{url}?{query}"
+        return url
+
+def parse_args(config: Dict[str, any]) -> List[str]:
+    """
+    Convert a dictionary of configuration options into command-line arguments.
 
     Args:
-        config  (dict) : Dictionary of arguments to be parsed.
+        config (Dict[str, any]): Configuration dictionary.
 
     Returns:
-        args    (list) : List of command line arguments.
+        List[str]: List of command-line arguments.
     """
     args = []
-
     for k, v in config.items():
         if k.startswith("_"):
             args.append(str(v))
@@ -31,34 +86,34 @@ def parse_args(config):
             args.append(f'--{k}={v}')
         elif isinstance(v, bool) and v:
             args.append(f"--{k}")
-
     return args
 
-def aria2_download(download_dir: str, filename: str , url: str, quiet: bool=False, user_header: str=None):
+def aria2_download(download_dir: str, filename: str, url: str, headers: Dict[str, str], quiet: bool = False):
     """
-    Downloads a file using the aria2 download manager.
+    Download a file using aria2c.
 
     Args:
-        download_dir    (str)           : Directory to download the file to.
-        filename        (str)           : The name of the file being downloaded.
-        url             (str)           : URL to download the file from.
-        user_header     (str, optional) : Optional header to use for the download request. Defaults to None.
+        download_dir (str): Directory to save the downloaded file.
+        filename (str): Name of the file to be saved.
+        url (str): URL to download from.
+        headers (Dict[str, str]): Headers to use for the download request.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
     """
     if not quiet:
         start_time = time.time()
         cprint(f"Starting download of '{filename}' with aria2c...", color="green")
 
     aria2_config = {
-        "console-log-level"         : "error",
-        "summary-interval"          : 10,
-        "header"                    : user_header if "huggingface.co" in url else None,
-        "continue"                  : True,
-        "max-connection-per-server" : 16,
-        "min-split-size"            : "1M",
-        "split"                     : 16,
-        "dir"                       : download_dir,
-        "out"                       : filename,
-        "_url"                      : url,
+        "console-log-level": "error",
+        "summary-interval": 10,
+        "header": [f"{k}: {v}" for k, v in headers.items()],
+        "continue": True,
+        "max-connection-per-server": 16,
+        "min-split-size": "1M",
+        "split": 16,
+        "dir": download_dir,
+        "out": filename,
+        "_url": url,
     }
     aria2_args = parse_args(aria2_config)
     subprocess.run(["aria2c", *aria2_args])
@@ -67,25 +122,26 @@ def aria2_download(download_dir: str, filename: str , url: str, quiet: bool=Fals
         elapsed_time = calculate_elapsed_time(start_time)
         cprint(f"Download of '{filename}' completed. Took {elapsed_time}.", color="green")
 
-def gdown_download(url: str, dst: str, quiet: bool=False):
+def gdown_download(url: str, dst: str, quiet: bool = False):
     """
-    Downloads a file from a Google Drive URL using gdown.
+    Download a file from Google Drive using gdown.
 
     Args:
-        url (str): The URL of the file on Google Drive.
-        dst (str): The directory to download the file to.
+        url (str): Google Drive URL to download from.
+        dst (str): Directory to save the downloaded file.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
 
     Returns:
-        The output of the gdown download function.
+        str: Path to the downloaded file or folder.
     """
     if not quiet:
         start_time = time.time()
         cprint(f"Starting download with gdown...", color="green")
 
     options = {
-        "uc?id"         : {},
-        "file/d"        : {"fuzzy"      : True},
-        "drive/folders" : {"use_cookies": False},
+        "uc?id": {},
+        "file/d": {"fuzzy": True},
+        "drive/folders": {"use_cookies": False},
     }
 
     for key, kwargs in options.items():
@@ -105,40 +161,19 @@ def gdown_download(url: str, dst: str, quiet: bool=False):
 
     return output
 
-# def mega_download(url: str, dst: str, quiet: bool=False):
-#     """
-#     Downloads a file from a MEGA URL.
-
-#     Args:
-#         url (str): The URL of the file on MEGA.
-#         dst (str): The directory to download the file to.
-#     """
-#     if not quiet:
-#         start_time = time.time()
-#         cprint(f"Starting download with mega.py...", color="green")
-
-#     mega = Mega()
-#     m = mega.login()  # add login credentials if needed
-#     file = m.download_url(url, dst)
-    
-#     if not quiet:
-#         elapsed_time = calculate_elapsed_time(start_time)
-#         cprint(f"Download completed. Took {elapsed_time}.", color="green")
-
-#     return file
-
-def get_modelname(url: str, quiet: bool=False, user_header: str=None) -> None:
+def get_modelname(url: str, quiet: bool = False, headers: Dict[str, str] = None) -> Optional[str]:
     """
-    Retrieves the model name from a given URL.
+    Extract the model name from a given URL.
 
     Args:
-        url   (str)             : The URL of the model file.
-        quiet (bool, optional)  : If True, suppresses output. Defaults to True.
+        url (str): URL to extract the model name from.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
+        headers (Dict[str, str], optional): Headers to use for the request. Defaults to None.
 
     Returns:
-        str or None: The filename of the model file if it ends with a supported extension, otherwise None.
+        Optional[str]: The extracted model name, or None if extraction failed.
     """
-    filename = os.path.basename(url) if "drive/MyDrive" in url or url.endswith(SUPPORTED_EXTENSIONS) else get_filename(url, user_header=user_header)
+    filename = os.path.basename(url) if "drive/MyDrive" in url or url.endswith(SUPPORTED_EXTENSIONS) else get_filename(url, user_header=headers)
 
     if filename.endswith(SUPPORTED_EXTENSIONS):
         if not quiet:
@@ -150,17 +185,22 @@ def get_modelname(url: str, quiet: bool=False, user_header: str=None) -> None:
 
     return None
 
-def download(url: str, dst: str, filename:str= None, user_header: str=None, quiet: bool=False):
+def download(url: str, dst: str, config: DownloadConfig, filename: str = None, quiet: bool = False):
     """
-    Downloads a file from a given URL to a destination directory.
+    Download a file from the given URL using the appropriate method.
 
     Args:
-        url         (str)           : The URL of the file to download.
-        dst         (str)           : The directory to download the file to.
-        user_header (str, optional) : Optional header to use for the download request. Defaults to None.
+        url (str): URL to download from.
+        dst (str): Directory to save the downloaded file.
+        config (DownloadConfig): Configuration for the download.
+        filename (str, optional): Name to save the file as. If None, it will be extracted from the URL. Defaults to None.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
     """
+    url = config.get_url(url)
+    headers = config.get_headers(url)
+
     if not filename:
-        filename = get_modelname(url, quiet=quiet)
+        filename = get_modelname(url, quiet=quiet, headers=headers)
 
     if "drive.google.com" in url:
         gdown_download(url, dst, quiet=quiet)
@@ -173,25 +213,24 @@ def download(url: str, dst: str, filename:str= None, user_header: str=None, quie
             elapsed_time = calculate_elapsed_time(start_time)
             cprint(f"Copying completed. Took {elapsed_time}.", color="green")
     else:
-        if "huggingface.co" in url:
-            url = url.replace("/blob/", "/resolve/")
-        aria2_download(dst, filename, url, user_header=user_header, quiet=quiet)
+        aria2_download(dst, filename, url, headers=headers, quiet=quiet)
 
-def batch_download(urls: list, dst: str, desc: str = None, user_header: str = None, quiet: bool = False) -> None:
+def batch_download(urls: List[str], dst: str, config: DownloadConfig, desc: str = None, quiet: bool = False) -> None:
     """
-    Downloads multiple files from a list of URLs.
+    Download multiple files concurrently.
 
     Args:
-        urls: A list of URLs from which to download files.
-        dst: The directory to download the files to.
-        user_header: Optional header to use for the download request. Defaults to None.
-        quiet: If True, suppresses output. Defaults to False.
+        urls (List[str]): List of URLs to download from.
+        dst (str): Directory to save the downloaded files.
+        config (DownloadConfig): Configuration for the downloads.
+        desc (str, optional): Description for the progress bar. Defaults to None.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
     """
     if desc is None:
         desc = "Downloading..." 
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(download, url, dst, user_header=user_header, quiet=True) for url in urls]
+        futures = [executor.submit(download, url, dst, config, quiet=True) for url in urls]
         with tqdm(total=len(futures), unit='file', disable=quiet, desc=cprint(desc, color="green", tqdm_desc=True)) as pbar:
             for future in as_completed(futures):
                 try:
@@ -200,15 +239,16 @@ def batch_download(urls: list, dst: str, desc: str = None, user_header: str = No
                 except Exception as e:
                     cprint(f"Failed to download file with error: {str(e)}", color="flat_red")
 
-def get_most_recent_file(directory: str, quiet: bool=False):
+def get_most_recent_file(directory: str, quiet: bool = False):
     """
-    Gets the most recent file in a given directory.
+    Get the most recently modified file in the given directory.
 
     Args:
-        directory (str) : The directory to search in.
+        directory (str): Directory to search for files.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
 
     Returns:
-        str or None     : The path to the most recent file, or None if no files are found.
+        str: Path to the most recent file, or None if no files found.
     """
     cprint(f"Getting filename from most recent file...", color="green")
 
@@ -227,16 +267,17 @@ def get_most_recent_file(directory: str, quiet: bool=False):
 
     return most_recent_file
 
-def get_filepath(url: str, dst: str, quiet: bool=False):
+def get_filepath(url: str, dst: str, quiet: bool = False):
     """
-    Returns the filepath of the model for a given URL and destination directory.
+    Get the filepath for a model based on the URL and destination directory.
 
     Args:
-        url (str)   : The URL of the model.
-        dst (str)   : The directory to download the model to.
+        url (str): URL of the model.
+        dst (str): Destination directory.
+        quiet (bool, optional): If True, suppress output. Defaults to False.
 
     Returns:
-        str         : The filepath of the model.
+        str: Full filepath for the model.
     """
     filename = get_modelname(url, quiet=True)
 
