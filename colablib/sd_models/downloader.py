@@ -61,7 +61,7 @@ class DownloadConfig(BaseModel):
         elif parsed_url.netloc == "civitai.com":
             if not self.token:
                 raise ValueError("A token is required for downloading from civitai.")
-            query = f"ApiKey={self.token}"
+            query = f"token={self.token}"
             if parsed_url.query:
                 return f"{url}&{query}"
             else:
