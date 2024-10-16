@@ -88,7 +88,7 @@ def parse_args(config: Dict[str, any]) -> List[str]:
             args.append(f"--{k}")
     return args
 
-def aria2_download(download_dir: str, filename: str, url: str, headers: Dict[str, str], quiet: bool = False):
+def aria2_download(download_dir: str, filename: str, url: str, headers: Dict[str, str] = None, quiet: bool = False):
     """
     Download a file using aria2c.
 
@@ -106,7 +106,7 @@ def aria2_download(download_dir: str, filename: str, url: str, headers: Dict[str
     aria2_config = {
         "console-log-level": "error",
         "summary-interval": 10,
-        "header": [f"{k}: {v}" for k, v in headers.items()],
+        "header": [f"{k}: {v}" for k, v in headers.items()] if headers else [],
         "continue": True,
         "max-connection-per-server": 16,
         "min-split-size": "1M",
